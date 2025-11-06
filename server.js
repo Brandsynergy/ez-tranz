@@ -16,11 +16,11 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
 // Store active payment sessions in memory
 const paymentSessions = new Map();
 
+// API Routes (MUST come before static files)
 // Create payment session and return URL for QR code
 app.post('/create-payment-session', async (req, res) => {
   try {
@@ -89,6 +89,9 @@ app.get('/payment-status/:sessionId', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', app: 'EZ TRANZ' });
 });
+
+// Serve static files AFTER API routes
+app.use(express.static('public'));
 
 // Clean up old sessions every hour
 setInterval(() => {
