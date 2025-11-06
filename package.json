@@ -1,0 +1,22 @@
+{
+  "name": "ez-tranz",
+  "version": "1.0.0",
+  "description": "Simple mobile payment terminal powered by Stripe",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["payment", "stripe", "pos", "mobile"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "stripe": "^14.10.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

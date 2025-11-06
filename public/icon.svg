@@ -1,0 +1,4 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#6366f1" rx="100"/>
+  <text x="50%" y="50%" font-size="200" text-anchor="middle" dy=".3em" fill="white" font-family="Arial, sans-serif">💳</text>
+</svg>
