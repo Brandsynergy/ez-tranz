@@ -1,21 +1,16 @@
-// Initialize Stripe (publishable key will be injected)
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51QRYigP9l4WUjJRq9XyGxzBVPzn4GxOTfZZ0zEqZY8qZP9E6oZMG9h5yVLcqYz7L8wXqN5fYwZ9xXqN5fYwZ9xXq00ABCDEFGH'; // Replace with your actual key
-const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-
-let elements;
 let currentAmount = '';
+let currentSessionId = null;
+let statusCheckInterval = null;
 
 // DOM Elements
 const amountScreen = document.getElementById('amount-screen');
-const paymentScreen = document.getElementById('payment-screen');
+const qrScreen = document.getElementById('qr-screen');
 const successScreen = document.getElementById('success-screen');
 const amountInput = document.getElementById('amount-input');
 const chargeBtn = document.getElementById('charge-btn');
 const numButtons = document.querySelectorAll('.num-btn');
-const submitPaymentBtn = document.getElementById('submit-payment');
-const cancelPaymentBtn = document.getElementById('cancel-payment');
+const cancelQrBtn = document.getElementById('cancel-qr');
 const newTransactionBtn = document.getElementById('new-transaction');
-const paymentMessage = document.getElementById('payment-message');
 
 // Numpad functionality
 numButtons.forEach(btn => {
@@ -51,42 +46,56 @@ function isValidAmount(amount) {
 
 // Show screen
 function showScreen(screenToShow) {
-    [amountScreen, paymentScreen, successScreen].forEach(screen => {
+    [amountScreen, qrScreen, successScreen].forEach(screen => {
         screen.classList.remove('active');
     });
     screenToShow.classList.add('active');
 }
 
-// Charge button click
+// Charge button click - Generate QR code
 chargeBtn.addEventListener('click', async () => {
     if (!isValidAmount(currentAmount)) return;
 
     const amount = parseFloat(currentAmount);
-    document.getElementById('payment-amount-text').textContent = amount.toFixed(2);
+    document.getElementById('qr-amount-text').textContent = amount.toFixed(2);
 
     try {
         chargeBtn.classList.add('loading');
         chargeBtn.disabled = true;
 
-        // Create payment intent
-        const response = await fetch('/create-payment-intent', {
+        // Create payment session
+        const response = await fetch('/create-payment-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount })
         });
 
-        const { clientSecret, error } = await response.json();
+        const { sessionId, paymentUrl, error } = await response.json();
 
         if (error) {
             throw new Error(error);
         }
 
-        // Initialize Stripe Elements
-        elements = stripe.elements({ clientSecret });
-        const paymentElement = elements.create('payment');
-        paymentElement.mount('#payment-element');
+        currentSessionId = sessionId;
 
-        showScreen(paymentScreen);
+        // Clear previous QR code
+        const qrcodeDiv = document.getElementById('qrcode');
+        qrcodeDiv.innerHTML = '';
+
+        // Generate QR code
+        new QRCode(qrcodeDiv, {
+            text: paymentUrl,
+            width: 256,
+            height: 256,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        showScreen(qrScreen);
+
+        // Start checking payment status
+        startStatusCheck();
     } catch (error) {
         alert('Error: ' + error.message);
     } finally {
@@ -95,42 +104,35 @@ chargeBtn.addEventListener('click', async () => {
     }
 });
 
-// Submit payment
-submitPaymentBtn.addEventListener('click', async () => {
-    submitPaymentBtn.disabled = true;
-    submitPaymentBtn.classList.add('loading');
-    paymentMessage.textContent = '';
-
-    try {
-        const { error } = await stripe.confirmPayment({
-            elements,
-            confirmParams: {
-                return_url: window.location.href,
-            },
-            redirect: 'if_required'
-        });
-
-        if (error) {
-            paymentMessage.textContent = error.message;
-            submitPaymentBtn.disabled = false;
-            submitPaymentBtn.classList.remove('loading');
-        } else {
-            // Payment successful
-            document.getElementById('success-amount').textContent = currentAmount;
-            showScreen(successScreen);
-            resetTransaction();
-        }
-    } catch (error) {
-        paymentMessage.textContent = 'Payment failed. Please try again.';
-        submitPaymentBtn.disabled = false;
-        submitPaymentBtn.classList.remove('loading');
+// Check payment status periodically
+function startStatusCheck() {
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
     }
-});
 
-// Cancel payment
-cancelPaymentBtn.addEventListener('click', () => {
+    statusCheckInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`/payment-status/${currentSessionId}`);
+            const { status, amount } = await response.json();
+
+            if (status === 'paid') {
+                clearInterval(statusCheckInterval);
+                document.getElementById('success-amount').textContent = amount.toFixed(2);
+                showScreen(successScreen);
+                resetTransaction();
+            }
+        } catch (error) {
+            console.error('Error checking status:', error);
+        }
+    }, 2000); // Check every 2 seconds
+}
+
+// Cancel QR code
+cancelQrBtn.addEventListener('click', () => {
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+    }
     showScreen(amountScreen);
-    paymentMessage.textContent = '';
 });
 
 // New transaction
@@ -143,8 +145,10 @@ function resetTransaction() {
     currentAmount = '';
     amountInput.value = '';
     chargeBtn.disabled = true;
-    submitPaymentBtn.disabled = false;
-    submitPaymentBtn.classList.remove('loading');
+    currentSessionId = null;
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+    }
 }
 
 // Service Worker registration for PWA

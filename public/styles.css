@@ -151,57 +151,69 @@ body {
     cursor: not-allowed;
 }
 
-/* Payment Screen */
-.payment-header {
+/* QR Code Screen */
+.qr-header {
     text-align: center;
     margin-bottom: 30px;
 }
 
-.payment-header h2 {
+.qr-header h2 {
     font-size: 24px;
     color: #1f2937;
     margin-bottom: 10px;
 }
 
-.payment-amount {
+.qr-amount {
     font-size: 36px;
     font-weight: 700;
     color: #6366f1;
 }
 
-.payment-element {
+.qr-code-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    background: white;
+    border-radius: 16px;
+    border: 3px solid #e5e7eb;
     margin-bottom: 20px;
 }
 
-.payment-message {
-    color: #dc2626;
-    font-size: 14px;
+#qrcode {
+    display: inline-block;
+}
+
+#qrcode img {
+    border-radius: 8px;
+}
+
+.qr-instruction {
     text-align: center;
-    margin-bottom: 15px;
-    min-height: 20px;
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 30px;
+    font-weight: 500;
 }
 
-.submit-btn {
-    width: 100%;
-    height: 56px;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-bottom: 12px;
+.waiting-animation {
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-.submit-btn:active {
-    transform: scale(0.98);
+.spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 15px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-.submit-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.waiting-animation p {
+    color: #6b7280;
+    font-size: 14px;
 }
 
 .cancel-btn {
@@ -214,6 +226,12 @@ body {
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cancel-btn:active {
+    transform: scale(0.98);
+    background: #f9fafb;
 }
 
 /* Success Screen */

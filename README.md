@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 💳 EZ TRANZ - Mobile Payment Terminal
 
 A world-class, beautifully simple mobile payment app that turns any phone into a payment terminal. No bulky POS machines needed!
@@ -189,3 +190,6 @@ You did it! 🚀
 ---
 
 **Made with ❤️ for simplicity**
+=======
+# ez-tranz
+>>>>>>> f34a6995f8f4a4983eac58f4c10cd364ba256555

@@ -50,16 +50,21 @@
                 <button id="charge-btn" class="charge-btn">Charge</button>
             </div>
 
-            <!-- Payment Screen -->
-            <div id="payment-screen" class="screen">
-                <div class="payment-header">
-                    <h2>Complete Payment</h2>
-                    <p class="payment-amount">$<span id="payment-amount-text">0.00</span></p>
+            <!-- QR Code Screen -->
+            <div id="qr-screen" class="screen">
+                <div class="qr-header">
+                    <h2>Customer Scans to Pay</h2>
+                    <p class="qr-amount">$<span id="qr-amount-text">0.00</span></p>
                 </div>
-                <div id="payment-element" class="payment-element"></div>
-                <div id="payment-message" class="payment-message"></div>
-                <button id="submit-payment" class="submit-btn">Pay Now</button>
-                <button id="cancel-payment" class="cancel-btn">Cancel</button>
+                <div class="qr-code-container">
+                    <div id="qrcode"></div>
+                </div>
+                <p class="qr-instruction">Customer scans this QR code with their phone camera</p>
+                <div class="waiting-animation">
+                    <div class="spinner"></div>
+                    <p>Waiting for payment...</p>
+                </div>
+                <button id="cancel-qr" class="cancel-btn">Cancel</button>
             </div>
 
             <!-- Success Screen -->
@@ -79,7 +84,7 @@
         </footer>
     </div>
 
-    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="/app.js"></script>
 </body>
 </html>
