@@ -1,6 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+
+// Validate Stripe key
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error('❌ ERROR: STRIPE_SECRET_KEY environment variable is not set!');
+  console.error('Please add your Stripe secret key to environment variables.');
+  process.exit(1);
+}
+
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();

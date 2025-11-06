@@ -70,11 +70,23 @@ chargeBtn.addEventListener('click', async () => {
             body: JSON.stringify({ amount })
         });
 
-        const { sessionId, paymentUrl, error } = await response.json();
-
-        if (error) {
-            throw new Error(error);
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
         }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            throw new Error('Server returned invalid response. Please check your Stripe keys.');
+        }
+
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        const { sessionId, paymentUrl } = data;
 
         currentSessionId = sessionId;
 
@@ -113,11 +125,17 @@ function startStatusCheck() {
     statusCheckInterval = setInterval(async () => {
         try {
             const response = await fetch(`/payment-status/${currentSessionId}`);
-            const { status, amount } = await response.json();
-
-            if (status === 'paid') {
+            
+            if (!response.ok) {
+                console.error('Status check failed:', response.status);
+                return;
+            }
+            
+            const data = await response.json();
+            
+            if (data.status === 'paid') {
                 clearInterval(statusCheckInterval);
-                document.getElementById('success-amount').textContent = amount.toFixed(2);
+                document.getElementById('success-amount').textContent = data.amount.toFixed(2);
                 showScreen(successScreen);
                 resetTransaction();
             }
