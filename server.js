@@ -167,6 +167,13 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
+// Cookie parser for sessions
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
+// Import mock database
+const db = require('./mockDatabase');
+
 // Store active payment sessions in memory
 const paymentSessions = new Map();
 
@@ -295,6 +302,141 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
   }
 
   res.json({received: true});
+});
+
+// ==========================================
+// MERCHANT AUTHENTICATION & DASHBOARD APIS
+// ==========================================
+
+// Middleware to check if merchant is authenticated
+function requireAuth(req, res, next) {
+  const sessionId = req.cookies.merchantSession;
+  if (!sessionId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  const merchantId = db.validateSession(sessionId);
+  if (!merchantId) {
+    res.clearCookie('merchantSession');
+    return res.status(401).json({ error: 'Session expired' });
+  }
+  
+  req.merchantId = merchantId;
+  next();
+}
+
+// Merchant Signup
+app.post('/api/merchant/signup', async (req, res) => {
+  try {
+    const { email, password, businessName } = req.body;
+    
+    if (!email || !password || !businessName) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    const merchant = await db.createMerchant(email, password, businessName);
+    const sessionId = db.createSession(merchant.id);
+    
+    res.cookie('merchantSession', sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
+    res.json({ success: true, merchant });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Merchant Login
+app.post('/api/merchant/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+    
+    const merchant = await db.authenticateMerchant(email, password);
+    if (!merchant) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const sessionId = db.createSession(merchant.id);
+    
+    res.cookie('merchantSession', sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+    
+    res.json({ success: true, merchant });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Merchant Logout
+app.post('/api/merchant/logout', (req, res) => {
+  const sessionId = req.cookies.merchantSession;
+  if (sessionId) {
+    db.deleteSession(sessionId);
+  }
+  res.clearCookie('merchantSession');
+  res.json({ success: true });
+});
+
+// Get Current Merchant
+app.get('/api/merchant/me', requireAuth, (req, res) => {
+  const merchant = db.getMerchantById(req.merchantId);
+  if (!merchant) {
+    return res.status(404).json({ error: 'Merchant not found' });
+  }
+  res.json(merchant);
+});
+
+// Get Merchant Settings (Branding)
+app.get('/api/merchant/settings', requireAuth, (req, res) => {
+  const settings = db.getMerchantSettings(req.merchantId);
+  if (!settings) {
+    return res.status(404).json({ error: 'Settings not found' });
+  }
+  res.json(settings);
+});
+
+// Update Merchant Settings (Branding)
+app.put('/api/merchant/settings', requireAuth, (req, res) => {
+  try {
+    const updates = req.body;
+    const settings = db.updateMerchantSettings(req.merchantId, updates);
+    res.json(settings);
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get Transaction Stats
+app.get('/api/merchant/stats', requireAuth, (req, res) => {
+  const stats = db.getTransactionStats(req.merchantId);
+  res.json(stats);
+});
+
+// Get Transaction History
+app.get('/api/merchant/transactions', requireAuth, (req, res) => {
+  const { limit, offset, currency, startDate, endDate } = req.query;
+  const options = {
+    limit: limit ? parseInt(limit) : 50,
+    offset: offset ? parseInt(offset) : 0,
+    currency,
+    startDate,
+    endDate
+  };
+  const result = db.getMerchantTransactions(req.merchantId, options);
+  res.json(result);
 });
 
 // Health check endpoint

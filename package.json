@@ -7,14 +7,21 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "keywords": ["payment", "stripe", "pos", "mobile"],
+  "keywords": [
+    "payment",
+    "stripe",
+    "pos",
+    "mobile"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "stripe": "^14.10.0",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
+    "express": "^4.18.2",
+    "stripe": "^14.10.0"
   },
   "engines": {
     "node": ">=18.0.0"
