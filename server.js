@@ -514,14 +514,18 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       customer: stripeCustomer.id,
     });
     
-    // Create payment intent (remove off_session conflict)
+    // Create payment intent with manual card confirmation only
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100),
       currency: currency || 'usd',
       customer: stripeCustomer.id,
       payment_method: paymentMethodId,
       confirm: true,
-      setup_future_usage: 'off_session', // Save for future use
+      setup_future_usage: 'off_session',
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: 'never' // Disable redirect-based payment methods
+      }
     });
     
     // Get card details
