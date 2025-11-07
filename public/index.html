@@ -84,7 +84,16 @@
         </footer>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" onerror="console.error('Failed to load QRCode library from CDN')"></script>
+    <script>
+        // Wait for QRCode library to load before loading app
+        window.addEventListener('load', () => {
+            if (typeof QRCode === 'undefined') {
+                console.error('QRCode library failed to load');
+                alert('QR Code library failed to load. Please check your internet connection and refresh.');
+            }
+        });
+    </script>
     <script src="/app.js"></script>
 </body>
 </html>

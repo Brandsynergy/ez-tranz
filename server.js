@@ -26,7 +26,10 @@ app.post('/create-payment-session', async (req, res) => {
   try {
     const { amount, currency = 'usd' } = req.body;
 
+    console.log('Creating payment session for amount:', amount, currency);
+
     if (!amount || amount <= 0) {
+      console.error('Invalid amount received:', amount);
       return res.status(400).json({ error: 'Invalid amount' });
     }
 
@@ -51,6 +54,8 @@ app.post('/create-payment-session', async (req, res) => {
       cancel_url: `${req.headers.origin || 'https://ez-tranz.onrender.com'}/cancel`,
     });
 
+    console.log('Payment session created:', session.id);
+
     // Store session for status checking
     paymentSessions.set(session.id, {
       amount,
@@ -64,6 +69,7 @@ app.post('/create-payment-session', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating payment session:', error);
+    console.error('Error details:', error.type, error.code, error.message);
     res.status(500).json({ error: error.message });
   }
 });

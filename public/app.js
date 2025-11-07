@@ -63,6 +63,11 @@ chargeBtn.addEventListener('click', async () => {
         chargeBtn.classList.add('loading');
         chargeBtn.disabled = true;
 
+        // Check if QRCode library is loaded
+        if (typeof QRCode === 'undefined') {
+            throw new Error('QR Code library not loaded. Please refresh the page.');
+        }
+
         // Create payment session
         const response = await fetch('/create-payment-session', {
             method: 'POST',
@@ -71,12 +76,14 @@ chargeBtn.addEventListener('click', async () => {
         });
 
         if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Server error: ${response.status} - ${errorText}`);
         }
 
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
+            console.error('Server response:', text);
             throw new Error('Server returned invalid response. Please check your Stripe keys.');
         }
 
@@ -84,6 +91,10 @@ chargeBtn.addEventListener('click', async () => {
         
         if (data.error) {
             throw new Error(data.error);
+        }
+
+        if (!data.sessionId || !data.paymentUrl) {
+            throw new Error('Invalid response from server: missing sessionId or paymentUrl');
         }
 
         const { sessionId, paymentUrl } = data;
@@ -94,21 +105,27 @@ chargeBtn.addEventListener('click', async () => {
         const qrcodeDiv = document.getElementById('qrcode');
         qrcodeDiv.innerHTML = '';
 
-        // Generate QR code
-        new QRCode(qrcodeDiv, {
-            text: paymentUrl,
-            width: 256,
-            height: 256,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
+        // Generate QR code with error handling
+        try {
+            new QRCode(qrcodeDiv, {
+                text: paymentUrl,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        } catch (qrError) {
+            console.error('QR Code generation error:', qrError);
+            throw new Error('Failed to generate QR code: ' + qrError.message);
+        }
 
         showScreen(qrScreen);
 
         // Start checking payment status
         startStatusCheck();
     } catch (error) {
+        console.error('Charge error:', error);
         alert('Error: ' + error.message);
     } finally {
         chargeBtn.classList.remove('loading');
