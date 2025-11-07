@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merchant Dashboard - EZ TRANZ</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; }
+        
+        /* Dashboard Layout */
+        .dashboard { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 24px; }
+        .main-content { flex: 1; padding: 32px; }
+        
+        /* Sidebar */
+        .logo { font-size: 24px; font-weight: 700; margin-bottom: 32px; }
+        .merchant-info { background: rgba(255,255,255,0.1); padding: 16px; border-radius: 12px; margin-bottom: 24px; }
+        .merchant-name { font-weight: 600; margin-bottom: 4px; }
+        .merchant-email { font-size: 12px; opacity: 0.8; }
+        
+        .nav-menu { list-style: none; }
+        .nav-item { margin-bottom: 8px; }
+        .nav-link { display: flex; align-items: center; padding: 12px 16px; border-radius: 8px; color: white; text-decoration: none; transition: all 0.2s; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.2); }
+        .nav-link span { margin-left: 12px; }
+        
+        .logout-btn { width: 100%; padding: 12px; background: rgba(255,255,255,0.15); border: none; color: white; border-radius: 8px; cursor: pointer; margin-top: 24px; }
+        .logout-btn:hover { background: rgba(255,255,255,0.25); }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        .header h1 { font-size: 32px; color: #1f2937; }
+        .btn-terminal { padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-terminal:hover { background: #4f46e5; }
+        
+        /* Tabs */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 32px; }
+        .stat-card { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-label { color: #6b7280; font-size: 14px; margin-bottom: 8px; }
+        .stat-value { font-size: 32px; font-weight: 700; color: #1f2937; }
+        .stat-currency { font-size: 14px; color: #6b7280; margin-top: 4px; }
+        
+        /* Form Styles */
+        .settings-card { background: white; padding: 32px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; }
+        .settings-title { font-size: 20px; font-weight: 600; color: #1f2937; margin-bottom: 24px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+        .form-input, .form-textarea { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
+        .form-input:focus, .form-textarea:focus { outline: none; border-color: #6366f1; }
+        .form-textarea { min-height: 100px; resize: vertical; }
+        
+        /* Color Picker */
+        .color-picker-group { display: flex; gap: 16px; align-items: center; }
+        .color-input { width: 80px; height: 48px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer; }
+        .color-preview { flex: 1; padding: 12px; border-radius: 8px; text-align: center; color: white; font-weight: 600; }
+        
+        /* Buttons */
+        .btn-primary { padding: 12px 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Success Message */
+        .success-message { background: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .success-message.show { display: block; }
+        
+        /* Transaction Table */
+        .table-container { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th { background: #f9fafb; padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; }
+        .table td { padding: 16px; border-top: 1px solid #e5e7eb; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .dashboard { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .main-content { padding: 16px; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">💳 EZ TRANZ</div>
+            
+            <div class="merchant-info">
+                <div class="merchant-name" id="merchant-name">Loading...</div>
+                <div class="merchant-email" id="merchant-email"></div>
+            </div>
+            
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active" data-tab="overview">
+                            <span>📊</span><span>Overview</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="branding">
+                            <span>🎨</span><span>Branding</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="transactions">
+                            <span>💰</span><span>Transactions</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <button class="logout-btn" id="logout-btn">🚪 Logout</button>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="header">
+                <h1 id="page-title">Dashboard Overview</h1>
+                <a href="/" class="btn-terminal">Open Payment Terminal</a>
+            </div>
+            
+            <!-- Overview Tab -->
+            <div id="overview-tab" class="tab-content active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Transactions</div>
+                        <div class="stat-value" id="total-transactions">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <stat-label">Today's Revenue</div>
+                        <div class="stat-value" id="today-revenue">$0</div>
+                        <div class="stat-currency">Mixed currencies</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">This Week</div>
+                        <div class="stat-value" id="week-revenue">$0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">This Month</div>
+                        <div class="stat-value" id="month-revenue">$0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Branding Tab -->
+            <div id="branding-tab" class="tab-content">
+                <div id="branding-success" class="success-message">Branding updated successfully!</div>
+                
+                <div class="settings-card">
+                    <h2 class="settings-title">Business Information</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Business Name</label>
+                            <input type="text" id="business-name" class="form-input" placeholder="Your Business Name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="tel" id="phone" class="form-input" placeholder="+1 234 567 8900">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Business Address</label>
+                        <input type="text" id="address" class="form-input" placeholder="123 Main St, City, Country">
+                    </div>
+                </div>
+                
+                <div class="settings-card">
+                    <h2 class="settings-title">Brand Colors</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Primary Color</label>
+                            <div class="color-picker-group">
+                                <input type="color" id="primary-color" class="color-input" value="#6366f1">
+                                <div class="color-preview" id="primary-preview" style="background: #6366f1;">Primary Color</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Secondary Color</label>
+                            <div class="color-picker-group">
+                                <input type="color" id="secondary-color" class="color-input" value="#8b5cf6">
+                                <div class="color-preview" id="secondary-preview" style="background: #8b5cf6;">Secondary Color</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-card">
+                    <h2 class="settings-title">Receipt Footer</h2>
+                    <div class="form-group">
+                        <label class="form-label">Custom Message (shown on receipts)</label>
+                        <textarea id="receipt-footer" class="form-textarea" placeholder="Thank you for your business!"></textarea>
+                    </div>
+                </div>
+                
+                <button id="save-branding-btn" class="btn-primary">Save Branding Settings</button>
+            </div>
+            
+            <!-- Transactions Tab -->
+            <div id="transactions-tab" class="tab-content">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Currency</th>
+                                <th>Status</th>
+                                <th>Transaction ID</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-tbody">
+                            <tr><td colspan="5" style="text-align: center; padding: 40px; color: #9ca3af;">Loading transactions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/merchant/me');
+                if (!response.ok) {
+                    window.location.href = '/merchant-login.html';
+                    return null;
+                }
+                return await response.json();
+            } catch (error) {
+                window.location.href = '/merchant-login.html';
+                return null;
+            }
+        }
+        
+        // Initialize dashboard
+        async function init() {
+            const merchant = await checkAuth();
+            if (!merchant) return;
+            
+            document.getElementById('merchant-name').textContent = merchant.businessName;
+            document.getElementById('merchant-email').textContent = merchant.email;
+            
+            await loadStats();
+            await loadSettings();
+            await loadTransactions();
+        }
+        
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/merchant/stats');
+                const stats = await response.json();
+                
+                document.getElementById('total-transactions').textContent = stats.totalTransactions;
+                document.getElementById('today-revenue').textContent = '$' + stats.todayRevenue.toFixed(2);
+                document.getElementById('week-revenue').textContent = '$' + stats.weekRevenue.toFixed(2);
+                document.getElementById('month-revenue').textContent = '$' + stats.monthRevenue.toFixed(2);
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        // Load branding settings
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/merchant/settings');
+                const settings = await response.json();
+                
+                document.getElementById('business-name').value = settings.businessName || '';
+                document.getElementById('phone').value = settings.phone || '';
+                document.getElementById('address').value = settings.address || '';
+                document.getElementById('primary-color').value = settings.primaryColor || '#6366f1';
+                document.getElementById('secondary-color').value = settings.secondaryColor || '#8b5cf6';
+                document.getElementById('receipt-footer').value = settings.receiptFooter || '';
+                
+                updateColorPreview('primary', settings.primaryColor);
+                updateColorPreview('secondary', settings.secondaryColor);
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+        
+        // Load transactions
+        async function loadTransactions() {
+            try {
+                const response = await fetch('/api/merchant/transactions');
+                const data = await response.json();
+                
+                const tbody = document.getElementById('transactions-tbody');
+                if (data.transactions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #9ca3af;">No transactions yet</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.transactions.map(txn => `
+                    <tr>
+                        <td>${new Date(txn.createdAt).toLocaleDateString()}</td>
+                        <td>${txn.amount.toFixed(2)}</td>
+                        <td>${txn.currency.toUpperCase()}</td>
+                        <td><span class="badge badge-success">Completed</span></td>
+                        <td style="font-family: monospace; font-size: 12px;">${txn.stripeSessionId.substring(0, 20)}...</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+            }
+        }
+        
+        // Update color preview
+        function updateColorPreview(type, color) {
+            const preview = document.getElementById(`${type}-preview`);
+            preview.style.background = color;
+        }
+        
+        // Color picker handlers
+        document.getElementById('primary-color').addEventListener('input', (e) => {
+            updateColorPreview('primary', e.target.value);
+        });
+        document.getElementById('secondary-color').addEventListener('input', (e) => {
+            updateColorPreview('secondary', e.target.value);
+        });
+        
+        // Save branding settings
+        document.getElementById('save-branding-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('save-branding-btn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            
+            try {
+                const settings = {
+                    businessName: document.getElementById('business-name').value,
+                    phone: document.getElementById('phone').value,
+                    address: document.getElementById('address').value,
+                    primaryColor: document.getElementById('primary-color').value,
+                    secondaryColor: document.getElementById('secondary-color').value,
+                    receiptFooter: document.getElementById('receipt-footer').value
+                };
+                
+                const response = await fetch('/api/merchant/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('branding-success').classList.add('show');
+                    setTimeout(() => {
+                        document.getElementById('branding-success').classList.remove('show');
+                    }, 3000);
+                }
+            } catch (error) {
+                alert('Error saving settings');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Branding Settings';
+            }
+        });
+        
+        // Tab navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tab = e.currentTarget.dataset.tab;
+                
+                // Update active nav link
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                
+                // Show active tab
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                document.getElementById(`${tab}-tab`).classList.add('active');
+                
+                // Update page title
+                const titles = { overview: 'Dashboard Overview', branding: 'Branding Settings', transactions: 'Transaction History' };
+                document.getElementById('page-title').textContent = titles[tab];
+            });
+        });
+        
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await fetch('/api/merchant/logout', { method: 'POST' });
+            window.location.href = '/merchant-login.html';
+        });
+        
+        // Initialize on page load
+        init();
+    </script>
+</body>
+</html>
