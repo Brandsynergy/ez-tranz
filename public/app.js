@@ -2,15 +2,33 @@ let currentAmount = '';
 let currentSessionId = null;
 let statusCheckInterval = null;
 
-// DOM Elements
-const amountScreen = document.getElementById('amount-screen');
-const qrScreen = document.getElementById('qr-screen');
-const successScreen = document.getElementById('success-screen');
-const amountInput = document.getElementById('amount-input');
-const chargeBtn = document.getElementById('charge-btn');
-const numButtons = document.querySelectorAll('.num-btn');
-const cancelQrBtn = document.getElementById('cancel-qr');
-const newTransactionBtn = document.getElementById('new-transaction');
+// Wait for DOM to be fully loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
+
+function initApp() {
+    console.log('Initializing EZ TRANZ app...');
+    
+    // DOM Elements
+    const amountScreen = document.getElementById('amount-screen');
+    const qrScreen = document.getElementById('qr-screen');
+    const successScreen = document.getElementById('success-screen');
+    const amountInput = document.getElementById('amount-input');
+    const chargeBtn = document.getElementById('charge-btn');
+    const numButtons = document.querySelectorAll('.num-btn');
+    const cancelQrBtn = document.getElementById('cancel-qr');
+    const newTransactionBtn = document.getElementById('new-transaction');
+    
+    // Check if elements exist
+    if (!numButtons.length) {
+        console.error('Number buttons not found!');
+        return;
+    }
+    
+    console.log('Found', numButtons.length, 'number buttons');
 
 // Numpad functionality
 numButtons.forEach(btn => {
@@ -194,3 +212,5 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.log('Service Worker registration failed'));
     });
 }
+
+} // End of initApp function
