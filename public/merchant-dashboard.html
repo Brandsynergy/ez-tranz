@@ -429,14 +429,26 @@
                     body: JSON.stringify(settings)
                 });
                 
+                const data = await response.json();
+                
                 if (response.ok) {
                     document.getElementById('branding-success').classList.add('show');
                     setTimeout(() => {
                         document.getElementById('branding-success').classList.remove('show');
                     }, 3000);
+                } else {
+                    // Show specific error message
+                    const errorMsg = data.error || 'Failed to save settings';
+                    alert(errorMsg);
+                    
+                    // If session expired, redirect to login
+                    if (response.status === 401) {
+                        window.location.href = '/merchant-login.html';
+                    }
                 }
             } catch (error) {
-                alert('Error saving settings');
+                console.error('Save settings error:', error);
+                alert('Error saving settings: ' + error.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Save Branding Settings';

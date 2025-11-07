@@ -300,17 +300,24 @@ app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) =
 // Middleware to check if merchant is authenticated
 function requireAuth(req, res, next) {
   const sessionId = req.cookies.merchantSession;
+  console.log('🔐 Auth check - Session:', sessionId ? 'EXISTS' : 'MISSING');
+  
   if (!sessionId) {
-    return res.status(401).json({ error: 'Not authenticated' });
+    console.log('❌ Auth failed: No session cookie');
+    return res.status(401).json({ error: 'Not authenticated. Please login again.' });
   }
   
   const merchantId = db.validateSession(sessionId);
+  console.log('🔐 Validated merchant ID:', merchantId || 'INVALID');
+  
   if (!merchantId) {
+    console.log('❌ Auth failed: Session expired or invalid');
     res.clearCookie('merchantSession');
-    return res.status(401).json({ error: 'Session expired' });
+    return res.status(401).json({ error: 'Session expired. Please login again.' });
   }
   
   req.merchantId = merchantId;
+  console.log('✅ Auth successful for merchant:', merchantId);
   next();
 }
 
@@ -416,12 +423,19 @@ app.get('/api/merchant/settings', (req, res) => {
 // Update Merchant Settings (Branding)
 app.put('/api/merchant/settings', requireAuth, (req, res) => {
   try {
+    console.log('🔧 Update settings request for merchant:', req.merchantId);
+    console.log('🔧 Update payload keys:', Object.keys(req.body));
+    console.log('🔧 Logo size:', req.body.logo ? req.body.logo.length : 'N/A');
+    
     const updates = req.body;
     const settings = db.updateMerchantSettings(req.merchantId, updates);
+    
+    console.log('✅ Settings updated successfully');
     res.json(settings);
   } catch (error) {
-    console.error('Update settings error:', error);
-    res.status(400).json({ error: error.message });
+    console.error('❌ Update settings error:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(400).json({ error: error.message || 'Failed to update settings' });
   }
 });
 
