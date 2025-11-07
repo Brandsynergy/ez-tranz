@@ -464,16 +464,53 @@ app.get('/api/merchant/transactions', requireAuth, (req, res) => {
 // ==========================================
 
 // Check if customer exists by phone number
-app.get('/api/customer/check', (req, res) => {
+app.get('/api/customer/check', async (req, res) => {
   try {
     const { phone } = req.query;
     if (!phone) {
       return res.status(400).json({ error: 'Phone number required' });
     }
     
-    const customer = db.getCustomerByPhone(phone);
+    console.log('🔍 Checking customer with phone:', phone);
+    
+    // First check local DB
+    let customer = db.getCustomerByPhone(phone);
+    
+    // If not in local DB, search Stripe directly
+    if (!customer) {
+      console.log('🔍 Customer not in local DB, checking Stripe...');
+      const stripeCustomers = await stripe.customers.search({
+        query: `phone:'${phone}'`,
+      });
+      
+      if (stripeCustomers.data.length > 0) {
+        const stripeCustomer = stripeCustomers.data[0];
+        console.log('✅ Found customer in Stripe:', stripeCustomer.id);
+        
+        // Get payment methods
+        const paymentMethods = await stripe.paymentMethods.list({
+          customer: stripeCustomer.id,
+          type: 'card',
+        });
+        
+        if (paymentMethods.data.length > 0) {
+          const card = paymentMethods.data[0].card;
+          
+          // Save to local DB for faster future lookups
+          customer = db.createOrUpdateCustomer(
+            phone,
+            stripeCustomer.id,
+            card.last4,
+            card.brand
+          );
+          
+          console.log('✅ Customer restored to local DB');
+        }
+      }
+    }
     
     if (customer) {
+      console.log('✅ Customer exists with card ending in', customer.last4);
       res.json({
         exists: true,
         customer: {
@@ -483,6 +520,7 @@ app.get('/api/customer/check', (req, res) => {
         }
       });
     } else {
+      console.log('❌ Customer not found');
       res.json({ exists: false });
     }
   } catch (error) {
