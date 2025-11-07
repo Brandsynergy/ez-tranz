@@ -402,18 +402,22 @@ app.get('/api/merchant/me', requireAuth, (req, res) => {
 // If authenticated, return merchant's settings; otherwise return demo merchant settings for public terminal
 app.get('/api/merchant/settings', (req, res) => {
   const sessionId = req.cookies.merchantSession;
+  console.log('📝 Settings API - Session cookie:', sessionId ? 'EXISTS' : 'MISSING');
   let merchantId = null;
   
   if (sessionId) {
     merchantId = db.validateSession(sessionId);
+    console.log('📝 Validated merchant ID:', merchantId || 'INVALID SESSION');
   }
   
   // If not authenticated, use demo merchant for public terminal
   if (!merchantId) {
     merchantId = db.getDemoMerchantId();
+    console.log('📝 Using demo merchant ID:', merchantId);
   }
   
   const settings = db.getMerchantSettings(merchantId);
+  console.log('📝 Returning settings for:', settings ? settings.businessName : 'NOT FOUND');
   if (!settings) {
     return res.status(404).json({ error: 'Settings not found' });
   }
