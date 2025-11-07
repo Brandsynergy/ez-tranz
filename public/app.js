@@ -28,8 +28,10 @@ function initApp() {
     const currencySymbol = document.getElementById('currency-symbol');
     const currencyHint = document.getElementById('currency-hint');
     
-    // Try to load branding (if merchant is logged in on this browser)
-    loadBranding().catch(() => {});
+    // Load branding after a short delay to ensure DOM is fully ready
+    setTimeout(() => {
+        loadBranding().catch(() => {});
+    }, 100);
     
     // Check if elements exist
     if (!numButtons.length) {
