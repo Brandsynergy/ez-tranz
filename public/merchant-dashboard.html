@@ -70,6 +70,14 @@
         .success-message { background: #d1fae5; color: #065f46; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; display: none; }
         .success-message.show { display: block; }
         
+        /* Logo Upload */
+        .logo-upload-area { border: 2px dashed #e5e7eb; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .logo-upload-area:hover { border-color: #6366f1; background: #f9fafb; }
+        .logo-preview { max-width: 200px; max-height: 100px; margin: 16px auto; display: none; }
+        .logo-preview img { max-width: 100%; height: auto; border-radius: 8px; }
+        .logo-preview.show { display: block; }
+        .file-input { display: none; }
+        
         /* Transaction Table */
         .table-container { background: white; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
         .table { width: 100%; border-collapse: collapse; }
@@ -154,6 +162,23 @@
             <!-- Branding Tab -->
             <div id="branding-tab" class="tab-content">
                 <div id="branding-success" class="success-message">Branding updated successfully!</div>
+                
+                <div class="settings-card">
+                    <h2 class="settings-title">Brand Logo</h2>
+                    <div class="form-group">
+                        <label class="form-label">Upload Your Logo</label>
+                        <input type="file" id="logo-input" class="file-input" accept="image/*">
+                        <div class="logo-upload-area" id="logo-upload-area">
+                            <div style="font-size: 48px; margin-bottom: 12px;">🖼️</div>
+                            <p style="color: #6b7280; margin-bottom: 8px;">Click to upload or drag and drop</p>
+                            <p style="color: #9ca3af; font-size: 12px;">PNG, JPG up to 2MB</p>
+                        </div>
+                        <div class="logo-preview" id="logo-preview">
+                            <img id="logo-preview-img" src="" alt="Logo Preview">
+                        </div>
+                        <input type="hidden" id="logo-url" value="">
+                    </div>
+                </div>
                 
                 <div class="settings-card">
                     <h2 class="settings-title">Business Information</h2>
@@ -282,6 +307,13 @@
                 document.getElementById('primary-color').value = settings.primaryColor || '#6366f1';
                 document.getElementById('secondary-color').value = settings.secondaryColor || '#8b5cf6';
                 document.getElementById('receipt-footer').value = settings.receiptFooter || '';
+                document.getElementById('logo-url').value = settings.logoUrl || '';
+                
+                // Show logo preview if exists
+                if (settings.logoUrl) {
+                    document.getElementById('logo-preview-img').src = settings.logoUrl;
+                    document.getElementById('logo-preview').classList.add('show');
+                }
                 
                 updateColorPreview('primary', settings.primaryColor);
                 updateColorPreview('secondary', settings.secondaryColor);
@@ -339,6 +371,31 @@
             });
         }
         
+        // Logo upload handlers
+        const logoInput = document.getElementById('logo-input');
+        const logoUploadArea = document.getElementById('logo-upload-area');
+        const logoPreview = document.getElementById('logo-preview');
+        const logoPreviewImg = document.getElementById('logo-preview-img');
+        
+        logoUploadArea.addEventListener('click', () => logoInput.click());
+        
+        logoInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File too large. Maximum size is 2MB.');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    logoPreviewImg.src = e.target.result;
+                    logoPreview.classList.add('show');
+                    document.getElementById('logo-url').value = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
         // Color picker handlers
         document.getElementById('primary-color').addEventListener('input', (e) => {
             updateColorPreview('primary', e.target.value);
@@ -362,7 +419,8 @@
                     address: document.getElementById('address').value,
                     primaryColor: document.getElementById('primary-color').value,
                     secondaryColor: document.getElementById('secondary-color').value,
-                    receiptFooter: document.getElementById('receipt-footer').value
+                    receiptFooter: document.getElementById('receipt-footer').value,
+                    logoUrl: document.getElementById('logo-url').value
                 };
                 
                 const response = await fetch('/api/merchant/settings', {
