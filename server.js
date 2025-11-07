@@ -597,14 +597,16 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
   }
 });
 
-// Pay with saved card using CVC only
+// Pay with saved card - no CVC needed for returning customers
 app.post('/api/customer/pay-with-saved', async (req, res) => {
   try {
-    const { phone, cvc, sessionId, amount, currency } = req.body;
+    const { phone, sessionId, amount, currency } = req.body;
     
-    if (!phone || !cvc || !amount) {
+    if (!phone || !amount) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+    
+    console.log('💳 Processing payment for returning customer:', phone);
     
     // Get customer from database
     const customer = db.getCustomerByPhone(phone);
@@ -624,19 +626,14 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
     
     const paymentMethodId = paymentMethods.data[0].id;
     
-    // Create payment intent with saved card
+    // Create payment intent with saved card (no CVC required)
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100),
       currency: currency || 'usd',
       customer: customer.stripeCustomerId,
       payment_method: paymentMethodId,
       off_session: true,
-      confirm: true,
-      payment_method_options: {
-        card: {
-          cvc: cvc
-        }
-      }
+      confirm: true
     });
     
     // Mark session as completed

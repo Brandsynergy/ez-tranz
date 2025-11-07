@@ -123,10 +123,10 @@
             <button id="save-card-btn" class="btn">Save Card & Pay</button>
         </div>
         
-        <!-- Step 3: Returning Customer - CVC Only -->
+        <!-- Step 3: Returning Customer - One Tap Payment -->
         <div id="step-cvc" class="step">
             <div class="info-box">
-                ⚡ Welcome back! Just enter your CVC to complete payment.
+                ⚡ Welcome back! Tap below to complete payment instantly with your saved card.
             </div>
             <div class="card-info">
                 <div class="card-icon">💳</div>
@@ -135,12 +135,8 @@
                     <div class="card-last4">•••• <span id="saved-card-last4">4242</span></div>
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">CVC</label>
-                <input type="text" id="cvc-input" class="form-input" placeholder="123" maxlength="4" inputmode="numeric">
-                <div id="cvc-error" class="error"></div>
-            </div>
-            <button id="pay-btn" class="btn">Pay Now</button>
+            <div id="cvc-error" class="error"></div>
+            <button id="pay-btn" class="btn">💳 Pay Now</button>
         </div>
         
         <!-- Step 4: Processing -->
@@ -282,17 +278,10 @@
             }
         });
         
-        // Step 3: Pay with CVC
+        // Step 3: One-tap payment with saved card (no CVC needed)
         document.getElementById('pay-btn').addEventListener('click', async () => {
             const btn = document.getElementById('pay-btn');
             const errorDiv = document.getElementById('cvc-error');
-            const cvc = document.getElementById('cvc-input').value.trim();
-            
-            if (!cvc || cvc.length < 3) {
-                errorDiv.textContent = 'Please enter a valid CVC';
-                errorDiv.classList.add('show');
-                return;
-            }
             
             btn.disabled = true;
             btn.textContent = 'Processing...';
@@ -301,13 +290,12 @@
             try {
                 const phone = document.getElementById('phone-input').value.trim();
                 
-                // Complete payment with saved card
+                // Complete payment with saved card (no CVC required)
                 const response = await fetch('/api/customer/pay-with-saved', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         phone,
-                        cvc,
                         sessionId,
                         amount,
                         currency
@@ -326,7 +314,7 @@
                 errorDiv.textContent = error.message;
                 errorDiv.classList.add('show');
                 btn.disabled = false;
-                btn.textContent = 'Pay Now';
+                btn.textContent = '💳 Pay Now';
             }
         });
         
