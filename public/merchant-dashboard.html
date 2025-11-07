@@ -136,7 +136,7 @@
                         <div class="stat-value" id="total-transactions">0</div>
                     </div>
                     <div class="stat-card">
-                        <stat-label">Today's Revenue</div>
+                        <div class="stat-label">Today's Revenue</div>
                         <div class="stat-value" id="today-revenue">$0</div>
                         <div class="stat-currency">Mixed currencies</div>
                     </div>
@@ -285,6 +285,7 @@
                 
                 updateColorPreview('primary', settings.primaryColor);
                 updateColorPreview('secondary', settings.secondaryColor);
+                applyBranding(settings);
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
@@ -322,12 +323,30 @@
             preview.style.background = color;
         }
         
+        function applyBranding(settings) {
+            // Apply to CSS vars used by terminal too
+            document.documentElement.style.setProperty('--brand-primary', settings.primaryColor || '#6366f1');
+            document.documentElement.style.setProperty('--brand-secondary', settings.secondaryColor || '#8b5cf6');
+            
+            // Sidebar gradient
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                sidebar.style.background = `linear-gradient(180deg, ${settings.primaryColor || '#6366f1'} 0%, ${settings.secondaryColor || '#8b5cf6'} 100%)`;
+            }
+            // Buttons
+            document.querySelectorAll('.btn-primary, .btn-terminal').forEach(btn => {
+                btn.style.background = `linear-gradient(135deg, ${settings.primaryColor || '#6366f1'} 0%, ${settings.secondaryColor || '#8b5cf6'} 100%)`;
+            });
+        }
+        
         // Color picker handlers
         document.getElementById('primary-color').addEventListener('input', (e) => {
             updateColorPreview('primary', e.target.value);
+            applyBranding({ primaryColor: e.target.value, secondaryColor: document.getElementById('secondary-color').value });
         });
         document.getElementById('secondary-color').addEventListener('input', (e) => {
             updateColorPreview('secondary', e.target.value);
+            applyBranding({ primaryColor: document.getElementById('primary-color').value, secondaryColor: e.target.value });
         });
         
         // Save branding settings

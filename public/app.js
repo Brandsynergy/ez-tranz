@@ -10,6 +10,8 @@ if (document.readyState === 'loading') {
     initApp();
 }
 
+let BRANDING = null;
+
 function initApp() {
     console.log('Initializing EZ TRANZ app...');
     
@@ -25,6 +27,9 @@ function initApp() {
     const currencySelect = document.getElementById('currency-select');
     const currencySymbol = document.getElementById('currency-symbol');
     const currencyHint = document.getElementById('currency-hint');
+    
+    // Try to load branding (if merchant is logged in on this browser)
+    loadBranding().catch(() => {});
     
     // Check if elements exist
     if (!numButtons.length) {
@@ -52,6 +57,29 @@ updateCurrencyHint();
 
 // Update when currency changes
 currencySelect.addEventListener('change', updateCurrencyHint);
+
+// Load branding and apply theme
+async function loadBranding() {
+    try {
+        const res = await fetch('/api/merchant/settings');
+        if (!res.ok) return; // Not logged in
+        BRANDING = await res.json();
+        applyBranding(BRANDING);
+    } catch (e) {
+        // ignore
+    }
+}
+
+function applyBranding(settings) {
+    const root = document.documentElement;
+    if (settings.primaryColor) root.style.setProperty('--brand-primary', settings.primaryColor);
+    if (settings.secondaryColor) root.style.setProperty('--brand-secondary', settings.secondaryColor);
+    // Update header logo/business name if provided
+    const logoEl = document.querySelector('.logo');
+    if (logoEl && settings.businessName) {
+        logoEl.textContent = `💳 ${settings.businessName}`;
+    }
+}
 
 // Numpad functionality
 numButtons.forEach(btn => {
@@ -266,13 +294,20 @@ function generateReceipt(transaction) {
         minute: '2-digit'
     });
     
+    const bizName = (BRANDING && BRANDING.businessName) ? BRANDING.businessName : 'EZ TRANZ';
+    const primary = (BRANDING && BRANDING.primaryColor) ? BRANDING.primaryColor : '#6366f1';
+    const secondary = (BRANDING && BRANDING.secondaryColor) ? BRANDING.secondaryColor : '#8b5cf6';
+    const address = (BRANDING && BRANDING.address) ? BRANDING.address : '';
+    const phone = (BRANDING && BRANDING.phone) ? BRANDING.phone : '';
+    const footerMsg = (BRANDING && BRANDING.receiptFooter) ? BRANDING.receiptFooter : 'Thank you for your payment!';
+
     // Create HTML receipt
     const receiptHTML = `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Payment Receipt - EZ TRANZ</title>
+    <title>Payment Receipt - ${bizName}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -289,12 +324,12 @@ function generateReceipt(transaction) {
         }
         .header {
             text-align: center;
-            border-bottom: 3px solid #6366f1;
+            border-bottom: 3px solid ${primary};
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
         .header h1 {
-            color: #6366f1;
+            color: ${primary};
             margin: 0;
             font-size: 32px;
         }
@@ -302,6 +337,7 @@ function generateReceipt(transaction) {
             color: #6b7280;
             margin: 5px 0 0 0;
         }
+        .biz-details { color:#6b7280; font-size: 13px; margin-top:6px; }
         .amount {
             text-align: center;
             font-size: 48px;
@@ -323,9 +359,7 @@ function generateReceipt(transaction) {
             border-bottom: 1px solid #e5e7eb;
             gap: 15px;
         }
-        .detail-row:last-child {
-            border-bottom: none;
-        }
+        .detail-row:last-child { border-bottom: none; }
         .label {
             color: #6b7280;
             font-weight: 600;
@@ -339,10 +373,7 @@ function generateReceipt(transaction) {
             word-break: break-all;
             font-size: 13px;
         }
-        .status {
-            text-align: center;
-            margin: 30px 0;
-        }
+        .status { text-align: center; margin: 30px 0; }
         .status-badge {
             display: inline-block;
             padding: 10px 20px;
@@ -359,17 +390,15 @@ function generateReceipt(transaction) {
             color: #6b7280;
             font-size: 14px;
         }
-        @media print {
-            body { background: white; margin: 0; padding: 20px; }
-            .receipt { box-shadow: none; }
-        }
+        @media print { body { background: white; margin: 0; padding: 20px; } .receipt { box-shadow: none; } }
     </style>
 </head>
 <body>
     <div class="receipt">
         <div class="header">
-            <h1>📋 EZ TRANZ</h1>
+            <h1>📋 ${bizName}</h1>
             <p>Payment Receipt</p>
+            ${(address || phone) ? `<div class="biz-details">${[address, phone].filter(Boolean).join(' • ')}</div>` : ''}
         </div>
         
         <div class="amount">
@@ -408,8 +437,8 @@ function generateReceipt(transaction) {
         </div>
         
         <div class="footer">
-            <p><strong>Thank you for your payment!</strong></p>
-            <p>Powered by EZ TRANZ & Stripe</p>
+            <p><strong>${footerMsg}</strong></p>
+            <p>Powered by ${bizName} & Stripe</p>
             <p style="font-size: 12px; margin-top: 20px;">This is a valid receipt for your payment. Keep it for your records.</p>
         </div>
     </div>
@@ -422,7 +451,7 @@ function generateReceipt(transaction) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `EZ-TRANZ-Receipt-${transaction.id.substring(0, 12)}.html`;
+    a.download = `${bizName.replace(/\s+/g,'-')}-Receipt-${transaction.id.substring(0, 12)}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
