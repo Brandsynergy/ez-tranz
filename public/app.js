@@ -62,15 +62,21 @@ currencySelect.addEventListener('change', updateCurrencyHint);
 async function loadBranding() {
     try {
         const res = await fetch('/api/merchant/settings');
-        if (!res.ok) return; // Not logged in
+        if (!res.ok) {
+            console.log('Branding API failed:', res.status);
+            return;
+        }
         BRANDING = await res.json();
+        console.log('Loaded branding:', BRANDING);
         applyBranding(BRANDING);
     } catch (e) {
-        // ignore
+        console.error('Error loading branding:', e);
     }
 }
 
 function applyBranding(settings) {
+    console.log('Applying branding:', {businessName: settings.businessName, hasLogo: !!settings.logoUrl, primaryColor: settings.primaryColor});
+    
     const root = document.documentElement;
     if (settings.primaryColor) root.style.setProperty('--brand-primary', settings.primaryColor);
     if (settings.secondaryColor) root.style.setProperty('--brand-secondary', settings.secondaryColor);
@@ -79,14 +85,18 @@ function applyBranding(settings) {
     const logoImg = document.getElementById('merchant-logo-img');
     const logoEl = document.getElementById('terminal-logo');
     
+    console.log('Elements found:', {logoContainer: !!logoContainer, logoImg: !!logoImg, logoEl: !!logoEl});
+    
     // Show merchant logo if exists, hide text logo
     if (settings.logoUrl && logoContainer && logoImg) {
+        console.log('Showing logo image');
         logoImg.src = settings.logoUrl;
         logoImg.alt = settings.businessName || 'Merchant Logo';
         logoContainer.style.display = 'block';
         // Hide the text logo when image logo is shown
         if (logoEl) logoEl.style.display = 'none';
     } else {
+        console.log('Showing text logo with business name:', settings.businessName);
         // Show text logo with business name
         if (logoEl) {
             logoEl.style.display = 'block';
