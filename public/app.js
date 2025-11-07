@@ -75,21 +75,25 @@ function applyBranding(settings) {
     if (settings.primaryColor) root.style.setProperty('--brand-primary', settings.primaryColor);
     if (settings.secondaryColor) root.style.setProperty('--brand-secondary', settings.secondaryColor);
     
-    // Show merchant logo if exists
-    if (settings.logoUrl) {
-        const logoContainer = document.getElementById('merchant-logo');
-        const logoImg = document.getElementById('merchant-logo-img');
-        if (logoContainer && logoImg) {
-            logoImg.src = settings.logoUrl;
-            logoImg.alt = settings.businessName || 'Merchant Logo';
-            logoContainer.style.display = 'block';
-        }
-    }
-    
-    // Update header business name if provided
+    const logoContainer = document.getElementById('merchant-logo');
+    const logoImg = document.getElementById('merchant-logo-img');
     const logoEl = document.getElementById('terminal-logo');
-    if (logoEl && settings.businessName) {
-        logoEl.textContent = `💳 ${settings.businessName}`;
+    
+    // Show merchant logo if exists, hide text logo
+    if (settings.logoUrl && logoContainer && logoImg) {
+        logoImg.src = settings.logoUrl;
+        logoImg.alt = settings.businessName || 'Merchant Logo';
+        logoContainer.style.display = 'block';
+        // Hide the text logo when image logo is shown
+        if (logoEl) logoEl.style.display = 'none';
+    } else {
+        // Show text logo with business name
+        if (logoEl) {
+            logoEl.style.display = 'block';
+            if (settings.businessName) {
+                logoEl.textContent = `💳 ${settings.businessName}`;
+            }
+        }
     }
 }
 
