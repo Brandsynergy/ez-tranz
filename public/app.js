@@ -203,6 +203,9 @@ chargeBtn.addEventListener('click', async () => {
 
         currentSessionId = sessionId;
 
+        // Create URL for our custom payment page
+        const customPaymentUrl = `${window.location.origin}/pay.html?session_id=${sessionId}&amount=${amount}&currency=${currency}`;
+
         // Clear previous QR code
         const qrcodeDiv = document.getElementById('qrcode');
         qrcodeDiv.innerHTML = '';
@@ -210,7 +213,7 @@ chargeBtn.addEventListener('click', async () => {
         // Generate QR code with error handling
         try {
             new QRCode(qrcodeDiv, {
-                text: paymentUrl,
+                text: customPaymentUrl,  // Use our custom payment page
                 width: 256,
                 height: 256,
                 colorDark: "#000000",

@@ -456,6 +456,149 @@ app.get('/api/merchant/transactions', requireAuth, (req, res) => {
   res.json(result);
 });
 
+// ==========================================
+// CUSTOMER PAYMENT APIS (Saved Cards)
+// ==========================================
+
+// Check if customer exists by phone number
+app.get('/api/customer/check', (req, res) => {
+  try {
+    const { phone } = req.query;
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number required' });
+    }
+    
+    const customer = db.getCustomerByPhone(phone);
+    
+    if (customer) {
+      res.json({
+        exists: true,
+        customer: {
+          phoneNumber: customer.phoneNumber,
+          last4: customer.last4,
+          cardBrand: customer.cardBrand
+        }
+      });
+    } else {
+      res.json({ exists: false });
+    }
+  } catch (error) {
+    console.error('Check customer error:', error);
+    res.status(500).json({ error: 'Failed to check customer' });
+  }
+});
+
+// Save new customer card and process payment
+app.post('/api/customer/save-and-pay', async (req, res) => {
+  try {
+    const { phone, paymentMethodId, sessionId, amount, currency } = req.body;
+    
+    if (!phone || !paymentMethodId || !amount) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Create Stripe customer
+    const stripeCustomer = await stripe.customers.create({
+      phone,
+      payment_method: paymentMethodId,
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+    
+    // Attach payment method to customer
+    await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: stripeCustomer.id,
+    });
+    
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100),
+      currency: currency || 'usd',
+      customer: stripeCustomer.id,
+      payment_method: paymentMethodId,
+      off_session: true,
+      confirm: true,
+      setup_future_usage: 'off_session',
+    });
+    
+    // Get card details
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    
+    // Save customer to database
+    db.createOrUpdateCustomer(
+      phone,
+      stripeCustomer.id,
+      paymentMethod.card.last4,
+      paymentMethod.card.brand
+    );
+    
+    console.log('✅ New customer card saved and payment completed:', phone);
+    
+    res.json({
+      success: true,
+      paymentIntentId: paymentIntent.id
+    });
+  } catch (error) {
+    console.error('Save and pay error:', error);
+    res.status(400).json({ error: error.message || 'Payment failed' });
+  }
+});
+
+// Pay with saved card using CVC only
+app.post('/api/customer/pay-with-saved', async (req, res) => {
+  try {
+    const { phone, cvc, sessionId, amount, currency } = req.body;
+    
+    if (!phone || !cvc || !amount) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Get customer from database
+    const customer = db.getCustomerByPhone(phone);
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+    
+    // Get customer's payment methods from Stripe
+    const paymentMethods = await stripe.paymentMethods.list({
+      customer: customer.stripeCustomerId,
+      type: 'card',
+    });
+    
+    if (paymentMethods.data.length === 0) {
+      return res.status(400).json({ error: 'No saved payment method found' });
+    }
+    
+    const paymentMethodId = paymentMethods.data[0].id;
+    
+    // Create payment intent with saved card
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100),
+      currency: currency || 'usd',
+      customer: customer.stripeCustomerId,
+      payment_method: paymentMethodId,
+      off_session: true,
+      confirm: true,
+      payment_method_options: {
+        card: {
+          cvc: cvc
+        }
+      }
+    });
+    
+    console.log('✅ Payment completed with saved card:', phone);
+    
+    res.json({
+      success: true,
+      paymentIntentId: paymentIntent.id
+    });
+  } catch (error) {
+    console.error('Pay with saved card error:', error);
+    res.status(400).json({ error: error.message || 'Payment failed' });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
