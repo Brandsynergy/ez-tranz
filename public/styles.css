@@ -107,10 +107,15 @@ body {
 }
 
 .currency-hint {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #9ca3af;
-    text-align: center;
+    margin-top: 12px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #6366f1;
+    background: #eef2ff;
+    border-left: 4px solid #6366f1;
+    border-radius: 6px;
+    text-align: left;
 }
 
 .amount-display {

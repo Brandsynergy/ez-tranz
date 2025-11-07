@@ -42,7 +42,7 @@ function updateCurrencyHint() {
     const minAmount = selectedOption.getAttribute('data-min');
     currencySymbol.textContent = symbol;
     if (currencyHint) {
-        currencyHint.textContent = `Minimum amount: ${symbol}${minAmount}`;
+        currencyHint.innerHTML = `ℹ️ <strong>Minimum:</strong> ${symbol}${minAmount}`;
     }
     console.log('Currency:', currencySelect.value, symbol, 'Min:', minAmount);
 }
