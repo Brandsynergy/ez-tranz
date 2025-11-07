@@ -189,32 +189,15 @@ app.post('/create-payment-session',
 
     console.log('✅ Creating payment session for amount:', amount, currency);
 
-    // Create Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: currency,
-            product_data: {
-              name: 'Payment',
-              description: `EZ TRANZ Payment`,
-            },
-            unit_amount: Math.round(amount * 100),
-          },
-          quantity: 1,
-        },
-      ],
-      mode: 'payment',
-      success_url: `${req.headers.origin || 'https://ez-tranz.onrender.com'}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin || 'https://ez-tranz.onrender.com'}/cancel`,
-    });
+    // Generate a simple session ID (no Stripe Checkout needed anymore)
+    const sessionId = 'pay_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    console.log('✅ Payment session created:', sessionId);
 
-    console.log('✅ Payment session created:', session.id);
-
-    // Store session for status checking with security info
-    paymentSessions.set(session.id, {
+    // Store session for tracking
+    paymentSessions.set(sessionId, {
       amount,
+      currency,
       status: 'pending',
       created: Date.now(),
       ip: req.ip || req.connection.remoteAddress,
@@ -226,9 +209,10 @@ app.post('/create-payment-session',
     dailyLimitMap.set(req.dailyLimitKey, currentTotal + parseFloat(amount));
     console.log(`📊 Daily total for ${req.dailyLimitKey}: $${(currentTotal + parseFloat(amount)).toFixed(2)}`);
 
+    // Return session ID - frontend will create payment URL
     res.json({
-      sessionId: session.id,
-      paymentUrl: session.url,
+      sessionId: sessionId,
+      paymentUrl: `/pay.html?session_id=${sessionId}&amount=${amount}&currency=${currency}`,
     });
   } catch (error) {
     console.error('Error creating payment session:', error);
@@ -242,11 +226,16 @@ app.get('/payment-status/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
     
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    // Check our in-memory session store
+    const session = paymentSessions.get(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
     
     res.json({
-      status: session.payment_status,
-      amount: session.amount_total / 100,
+      status: session.status === 'completed' ? 'paid' : 'pending',
+      amount: session.amount,
     });
   } catch (error) {
     console.error('Error checking payment status:', error);
@@ -533,6 +522,14 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       paymentMethod.card.brand
     );
     
+    // Mark session as completed
+    if (paymentSessions.has(sessionId)) {
+      const session = paymentSessions.get(sessionId);
+      session.status = 'completed';
+      session.paymentIntentId = paymentIntent.id;
+      paymentSessions.set(sessionId, session);
+    }
+    
     console.log('✅ New customer card saved and payment completed:', phone);
     
     res.json({
@@ -586,6 +583,14 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
         }
       }
     });
+    
+    // Mark session as completed
+    if (paymentSessions.has(sessionId)) {
+      const session = paymentSessions.get(sessionId);
+      session.status = 'completed';
+      session.paymentIntentId = paymentIntent.id;
+      paymentSessions.set(sessionId, session);
+    }
     
     console.log('✅ Payment completed with saved card:', phone);
     
