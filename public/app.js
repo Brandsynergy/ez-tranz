@@ -24,6 +24,7 @@ function initApp() {
     const newTransactionBtn = document.getElementById('new-transaction');
     const currencySelect = document.getElementById('currency-select');
     const currencySymbol = document.getElementById('currency-symbol');
+    const currencyHint = document.getElementById('currency-hint');
     
     // Check if elements exist
     if (!numButtons.length) {
@@ -32,9 +33,7 @@ function initApp() {
     }
     
     console.log('Found', numButtons.length, 'number buttons');
-
-// Currency selection handler
-const currencyHint = document.getElementById('currency-hint');
+    console.log('Currency hint element:', currencyHint ? 'Found' : 'NOT FOUND');
 
 // Initialize hint with default currency on load
 function updateCurrencyHint() {
