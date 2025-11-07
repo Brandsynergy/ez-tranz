@@ -1,6 +1,7 @@
 let currentAmount = '';
 let currentSessionId = null;
 let statusCheckInterval = null;
+let currentTransaction = null; // Store current transaction details for receipt
 
 // Wait for DOM to be fully loaded
 if (document.readyState === 'loading') {
@@ -187,9 +188,21 @@ function startStatusCheck() {
                 clearInterval(statusCheckInterval);
                 const selectedOption = currencySelect.options[currencySelect.selectedIndex];
                 const symbol = selectedOption.getAttribute('data-symbol');
+                const currencyCode = currencySelect.value.toUpperCase();
+                
+                // Store transaction details for receipt
+                currentTransaction = {
+                    id: currentSessionId,
+                    amount: data.amount,
+                    currency: currencyCode,
+                    symbol: symbol,
+                    date: new Date(),
+                    status: 'completed'
+                };
+                
                 document.getElementById('success-amount').textContent = symbol + data.amount.toFixed(2);
+                document.getElementById('transaction-id').textContent = currentSessionId.substring(0, 20) + '...';
                 showScreen(successScreen);
-                resetTransaction();
             }
         } catch (error) {
             console.error('Error checking status:', error);
@@ -205,9 +218,18 @@ cancelQrBtn.addEventListener('click', () => {
     showScreen(amountScreen);
 });
 
+// Download receipt button
+const downloadReceiptBtn = document.getElementById('download-receipt');
+downloadReceiptBtn.addEventListener('click', () => {
+    if (currentTransaction) {
+        generateReceipt(currentTransaction);
+    }
+});
+
 // New transaction
 newTransactionBtn.addEventListener('click', () => {
     showScreen(amountScreen);
+    currentTransaction = null; // Clear transaction data
 });
 
 // Reset transaction
@@ -219,6 +241,175 @@ function resetTransaction() {
     if (statusCheckInterval) {
         clearInterval(statusCheckInterval);
     }
+}
+
+// Generate and download receipt
+function generateReceipt(transaction) {
+    const date = transaction.date;
+    const dateStr = date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    // Create HTML receipt
+    const receiptHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Receipt - EZ TRANZ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 40px;
+            background: #f9fafb;
+        }
+        .receipt {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #6366f1;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #6366f1;
+            margin: 0;
+            font-size: 32px;
+        }
+        .header p {
+            color: #6b7280;
+            margin: 5px 0 0 0;
+        }
+        .amount {
+            text-align: center;
+            font-size: 48px;
+            font-weight: bold;
+            color: #10b981;
+            margin: 30px 0;
+        }
+        .details {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            color: #6b7280;
+            font-weight: 600;
+        }
+        .value {
+            color: #1f2937;
+            font-family: monospace;
+        }
+        .status {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #d1fae5;
+            color: #065f46;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        @media print {
+            body { background: white; margin: 0; padding: 20px; }
+            .receipt { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <div class="header">
+            <h1>📋 EZ TRANZ</h1>
+            <p>Payment Receipt</p>
+        </div>
+        
+        <div class="amount">
+            ${transaction.symbol}${transaction.amount.toFixed(2)} ${transaction.currency}
+        </div>
+        
+        <div class="status">
+            <span class="status-badge">✓ PAYMENT COMPLETED</span>
+        </div>
+        
+        <div class="details">
+            <div class="detail-row">
+                <span class="label">Transaction ID:</span>
+                <span class="value">${transaction.id}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Date & Time:</span>
+                <span class="value">${dateStr}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Amount:</span>
+                <span class="value">${transaction.symbol}${transaction.amount.toFixed(2)}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Currency:</span>
+                <span class="value">${transaction.currency}</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Payment Method:</span>
+                <span class="value">Card Payment</span>
+            </div>
+            <div class="detail-row">
+                <span class="label">Status:</span>
+                <span class="value">Completed</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Thank you for your payment!</strong></p>
+            <p>Powered by EZ TRANZ & Stripe</p>
+            <p style="font-size: 12px; margin-top: 20px;">This is a valid receipt for your payment. Keep it for your records.</p>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+    
+    // Create blob and download
+    const blob = new Blob([receiptHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `EZ-TRANZ-Receipt-${transaction.id.substring(0, 12)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log('📄 Receipt downloaded');
 }
 
 // Service Worker registration for PWA
