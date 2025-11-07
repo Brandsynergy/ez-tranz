@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Payment - EZ TRANZ</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .logo { text-align: center; font-size: 48px; margin-bottom: 8px; }
+        .title { text-align: center; font-size: 24px; font-weight: 700; color: #1f2937; margin-bottom: 8px; }
+        .amount { text-align: center; font-size: 48px; font-weight: 700; color: #6366f1; margin: 24px 0; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+        .form-input { 
+            width: 100%; 
+            padding: 14px 16px; 
+            border: 2px solid #e5e7eb; 
+            border-radius: 12px; 
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .form-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(99,102,241,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .info-box {
+            background: #eff6ff;
+            border: 2px solid #3b82f6;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            color: #1e40af;
+        }
+        .card-info {
+            background: #f9fafb;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .card-icon { font-size: 32px; }
+        .card-details { flex: 1; }
+        .card-brand { font-weight: 600; color: #1f2937; text-transform: capitalize; }
+        .card-last4 { color: #6b7280; font-size: 14px; }
+        #card-element { 
+            padding: 14px; 
+            border: 2px solid #e5e7eb; 
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .error { color: #dc2626; font-size: 14px; margin-top: 8px; display: none; }
+        .error.show { display: block; }
+        .loading { text-align: center; padding: 40px; }
+        .spinner { width: 50px; height: 50px; border: 4px solid #e5e7eb; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">💳</div>
+        <h1 class="title" id="merchant-name">EZ TRANZ</h1>
+        <div class="amount" id="amount-display">$0.00</div>
+        
+        <!-- Step 1: Phone Number -->
+        <div id="step-phone" class="step active">
+            <div class="info-box">
+                ℹ️ Enter your phone number to continue. We'll remember your card for faster payments next time!
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" id="phone-input" class="form-input" placeholder="+234 123 456 7890" required>
+                <div id="phone-error" class="error"></div>
+            </div>
+            <button id="phone-btn" class="btn">Continue</button>
+        </div>
+        
+        <!-- Step 2: New Customer - Full Card Details -->
+        <div id="step-new-card" class="step">
+            <div class="info-box">
+                🔒 Your card will be securely saved for future payments. Next time you'll only need your CVC!
+            </div>
+            <div class="form-group">
+                <label class="form-label">Card Details</label>
+                <div id="card-element"></div>
+                <div id="card-error" class="error"></div>
+            </div>
+            <button id="save-card-btn" class="btn">Save Card & Pay</button>
+        </div>
+        
+        <!-- Step 3: Returning Customer - CVC Only -->
+        <div id="step-cvc" class="step">
+            <div class="info-box">
+                ⚡ Welcome back! Just enter your CVC to complete payment.
+            </div>
+            <div class="card-info">
+                <div class="card-icon">💳</div>
+                <div class="card-details">
+                    <div class="card-brand" id="saved-card-brand">Visa</div>
+                    <div class="card-last4">•••• <span id="saved-card-last4">4242</span></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">CVC</label>
+                <input type="text" id="cvc-input" class="form-input" placeholder="123" maxlength="4" inputmode="numeric">
+                <div id="cvc-error" class="error"></div>
+            </div>
+            <button id="pay-btn" class="btn">Pay Now</button>
+        </div>
+        
+        <!-- Step 4: Processing -->
+        <div id="step-processing" class="step">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p style="color: #6b7280;">Processing payment...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Get payment details from URL
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+        const amount = params.get('amount');
+        const currency = params.get('currency') || 'usd';
+        
+        if (!sessionId || !amount) {
+            alert('Invalid payment link');
+            window.location.href = '/';
+        }
+        
+        // Display amount
+        const currencySymbols = { usd: '$', eur: '€', gbp: '£', ngn: '₦' };
+        const symbol = currencySymbols[currency] || '$';
+        document.getElementById('amount-display').textContent = symbol + parseFloat(amount).toFixed(2);
+        
+        // Initialize Stripe
+        const stripe = Stripe('YOUR_STRIPE_PUBLISHABLE_KEY'); // Will be replaced by server
+        const elements = stripe.elements();
+        let cardElement = null;
+        let currentCustomer = null;
+        
+        // Step 1: Phone Number
+        document.getElementById('phone-btn').addEventListener('click', async () => {
+            const phone = document.getElementById('phone-input').value.trim();
+            const errorDiv = document.getElementById('phone-error');
+            
+            if (!phone) {
+                errorDiv.textContent = 'Please enter your phone number';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            errorDiv.classList.remove('show');
+            document.getElementById('phone-btn').disabled = true;
+            document.getElementById('phone-btn').textContent = 'Checking...';
+            
+            try {
+                // Check if customer exists
+                const response = await fetch(`/api/customer/check?phone=${encodeURIComponent(phone)}`);
+                const data = await response.json();
+                
+                if (data.exists) {
+                    // Returning customer - show CVC step
+                    currentCustomer = data.customer;
+                    document.getElementById('saved-card-brand').textContent = data.customer.cardBrand;
+                    document.getElementById('saved-card-last4').textContent = data.customer.last4;
+                    showStep('step-cvc');
+                } else {
+                    // New customer - show card input
+                    initializeCardElement();
+                    showStep('step-new-card');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Error checking phone number. Please try again.';
+                errorDiv.classList.add('show');
+            } finally {
+                document.getElementById('phone-btn').disabled = false;
+                document.getElementById('phone-btn').textContent = 'Continue';
+            }
+        });
+        
+        // Initialize Stripe Card Element
+        function initializeCardElement() {
+            if (!cardElement) {
+                cardElement = elements.create('card', {
+                    style: {
+                        base: {
+                            fontSize: '16px',
+                            color: '#1f2937',
+                            '::placeholder': { color: '#9ca3af' }
+                        }
+                    }
+                });
+                cardElement.mount('#card-element');
+            }
+        }
+        
+        // Step 2: Save Card & Pay
+        document.getElementById('save-card-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('save-card-btn');
+            const errorDiv = document.getElementById('card-error');
+            
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            errorDiv.classList.remove('show');
+            
+            try {
+                const phone = document.getElementById('phone-input').value.trim();
+                
+                // Create payment method
+                const { paymentMethod, error } = await stripe.createPaymentMethod({
+                    type: 'card',
+                    card: cardElement,
+                });
+                
+                if (error) {
+                    throw new Error(error.message);
+                }
+                
+                // Save customer and complete payment
+                const response = await fetch('/api/customer/save-and-pay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone,
+                        paymentMethodId: paymentMethod.id,
+                        sessionId,
+                        amount,
+                        currency
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Payment failed');
+                }
+                
+                // Payment successful!
+                window.location.href = `/success?session_id=${sessionId}`;
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Save Card & Pay';
+            }
+        });
+        
+        // Step 3: Pay with CVC
+        document.getElementById('pay-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('pay-btn');
+            const errorDiv = document.getElementById('cvc-error');
+            const cvc = document.getElementById('cvc-input').value.trim();
+            
+            if (!cvc || cvc.length < 3) {
+                errorDiv.textContent = 'Please enter a valid CVC';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            errorDiv.classList.remove('show');
+            
+            try {
+                const phone = document.getElementById('phone-input').value.trim();
+                
+                // Complete payment with saved card
+                const response = await fetch('/api/customer/pay-with-saved', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone,
+                        cvc,
+                        sessionId,
+                        amount,
+                        currency
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Payment failed');
+                }
+                
+                // Payment successful!
+                window.location.href = `/success?session_id=${sessionId}`;
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Pay Now';
+            }
+        });
+        
+        function showStep(stepId) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById(stepId).classList.add('active');
+        }
+    </script>
+</body>
+</html>

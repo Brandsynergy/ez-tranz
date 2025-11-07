@@ -8,6 +8,7 @@ const merchants = new Map();
 const merchantSettings = new Map();
 const transactions = new Map();
 const sessions = new Map();
+const customers = new Map(); // Store customer phone numbers and Stripe IDs
 
 // Helper function to generate IDs
 function generateId() {
@@ -227,6 +228,30 @@ function getTransactionStats(merchantId) {
 }
 
 // ==========================================
+// CUSTOMERS (for saved payment methods)
+// ==========================================
+
+function createOrUpdateCustomer(phoneNumber, stripeCustomerId, last4, cardBrand) {
+    const customerId = generateId();
+    const customer = {
+        id: customerId,
+        phoneNumber,
+        stripeCustomerId,
+        last4, // Last 4 digits of card
+        cardBrand, // visa, mastercard, etc
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+    
+    customers.set(phoneNumber, customer);
+    return customer;
+}
+
+function getCustomerByPhone(phoneNumber) {
+    return customers.get(phoneNumber) || null;
+}
+
+// ==========================================
 // MERCHANT INFO
 // ==========================================
 
@@ -309,5 +334,9 @@ module.exports = {
     getTransactionStats,
     
     // Merchant
-    getMerchantById
+    getMerchantById,
+    
+    // Customers
+    createOrUpdateCustomer,
+    getCustomerByPhone
 };
