@@ -20,9 +20,29 @@ const PORT = process.env.PORT || 3000;
 
 // Transaction limits for fraud prevention
 const TRANSACTION_LIMITS = {
-  MIN_AMOUNT: 0.50,      // Minimum $0.50
-  MAX_AMOUNT: 999.99,    // Maximum $999.99 per transaction
-  DAILY_LIMIT: 10000     // Maximum $10,000 per day per IP
+  MIN_AMOUNT: 0.50,      // Minimum $0.50 (default)
+  MAX_AMOUNT: 999999.99, // Maximum per transaction
+  DAILY_LIMIT: 10000     // Maximum $10,000 per day per IP (in USD equivalent)
+};
+
+// Stripe minimum amounts by currency (to avoid processing errors)
+// These are based on Stripe's minimum charge amounts
+const CURRENCY_MINIMUMS = {
+  'usd': 0.50,     // $0.50
+  'eur': 0.50,     // €0.50
+  'gbp': 0.30,     // £0.30
+  'cad': 0.50,     // C$0.50
+  'aud': 0.50,     // A$0.50
+  'jpy': 50,       // ¥50
+  'chf': 0.50,     // Fr 0.50
+  'cny': 3,        // ¥3
+  'inr': 50,       // ₹50
+  'mxn': 10,       // $10
+  'brl': 2,        // R$2
+  'zar': 8,        // R8
+  'ngn': 500,      // ₦500 (minimum ~£0.30 equivalent)
+  'kes': 50,       // KSh50
+  'ghs': 5         // ₵5
 };
 
 // Rate limiting: Track requests per IP
@@ -81,22 +101,34 @@ function dailyLimitChecker(req, res, next) {
 
 // Security middleware: Validate transaction amount
 function validateAmount(req, res, next) {
-  const { amount } = req.body;
+  const { amount, currency = 'usd' } = req.body;
   const numAmount = parseFloat(amount);
+  const currencyLower = currency.toLowerCase();
 
   if (!amount || isNaN(numAmount)) {
     return res.status(400).json({ error: 'Invalid amount format' });
   }
 
-  if (numAmount < TRANSACTION_LIMITS.MIN_AMOUNT) {
+  // Get currency-specific minimum or use default
+  const minAmount = CURRENCY_MINIMUMS[currencyLower] || TRANSACTION_LIMITS.MIN_AMOUNT;
+
+  if (numAmount < minAmount) {
+    // Get currency symbol for error message
+    const currencySymbols = {
+      usd: '$', eur: '€', gbp: '£', ngn: '₦', inr: '₹', jpy: '¥',
+      cad: 'C$', aud: 'A$', brl: 'R$', mxn: '$', zar: 'R', 
+      kes: 'KSh', ghs: '₵', chf: 'Fr', cny: '¥'
+    };
+    const symbol = currencySymbols[currencyLower] || '';
+    
     return res.status(400).json({ 
-      error: `Minimum transaction amount is $${TRANSACTION_LIMITS.MIN_AMOUNT}` 
+      error: `Minimum transaction amount for ${currency.toUpperCase()} is ${symbol}${minAmount}` 
     });
   }
 
   if (numAmount > TRANSACTION_LIMITS.MAX_AMOUNT) {
     return res.status(400).json({ 
-      error: `Maximum transaction amount is $${TRANSACTION_LIMITS.MAX_AMOUNT}` 
+      error: `Maximum transaction amount is ${TRANSACTION_LIMITS.MAX_AMOUNT}` 
     });
   }
 

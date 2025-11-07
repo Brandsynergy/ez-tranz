@@ -106,6 +106,13 @@ body {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
+.currency-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+}
+
 .amount-display {
     text-align: center;
     margin-bottom: 40px;

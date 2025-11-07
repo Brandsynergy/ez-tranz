@@ -26,22 +26,23 @@
                 <div class="currency-selector-container">
                     <label for="currency-select" class="currency-label">Currency:</label>
                     <select id="currency-select" class="currency-select">
-                        <option value="usd" data-symbol="$">USD - US Dollar</option>
-                        <option value="eur" data-symbol="€">EUR - Euro</option>
-                        <option value="gbp" data-symbol="£">GBP - British Pound</option>
-                        <option value="cad" data-symbol="$">CAD - Canadian Dollar</option>
-                        <option value="aud" data-symbol="$">AUD - Australian Dollar</option>
-                        <option value="jpy" data-symbol="¥">JPY - Japanese Yen</option>
-                        <option value="chf" data-symbol="Fr">CHF - Swiss Franc</option>
-                        <option value="cny" data-symbol="¥">CNY - Chinese Yuan</option>
-                        <option value="inr" data-symbol="₹">INR - Indian Rupee</option>
-                        <option value="mxn" data-symbol="$">MXN - Mexican Peso</option>
-                        <option value="brl" data-symbol="R$">BRL - Brazilian Real</option>
-                        <option value="zar" data-symbol="R">ZAR - South African Rand</option>
-                        <option value="ngn" data-symbol="₦">NGN - Nigerian Naira</option>
-                        <option value="kes" data-symbol="KSh">KES - Kenyan Shilling</option>
-                        <option value="ghs" data-symbol="₵">GHS - Ghanaian Cedi</option>
+                        <option value="usd" data-symbol="$" data-min="0.50">USD - US Dollar</option>
+                        <option value="eur" data-symbol="€" data-min="0.50">EUR - Euro</option>
+                        <option value="gbp" data-symbol="£" data-min="0.30">GBP - British Pound</option>
+                        <option value="cad" data-symbol="$" data-min="0.50">CAD - Canadian Dollar</option>
+                        <option value="aud" data-symbol="$" data-min="0.50">AUD - Australian Dollar</option>
+                        <option value="jpy" data-symbol="¥" data-min="50">JPY - Japanese Yen</option>
+                        <option value="chf" data-symbol="Fr" data-min="0.50">CHF - Swiss Franc</option>
+                        <option value="cny" data-symbol="¥" data-min="3">CNY - Chinese Yuan</option>
+                        <option value="inr" data-symbol="₹" data-min="50">INR - Indian Rupee</option>
+                        <option value="mxn" data-symbol="$" data-min="10">MXN - Mexican Peso</option>
+                        <option value="brl" data-symbol="R$" data-min="2">BRL - Brazilian Real</option>
+                        <option value="zar" data-symbol="R" data-min="8">ZAR - South African Rand</option>
+                        <option value="ngn" data-symbol="₦" data-min="500">NGN - Nigerian Naira</option>
+                        <option value="kes" data-symbol="KSh" data-min="50">KES - Kenyan Shilling</option>
+                        <option value="ghs" data-symbol="₵" data-min="5">GHS - Ghanaian Cedi</option>
                     </select>
+                    <p class="currency-hint" id="currency-hint">Minimum amount: $0.50</p>
                 </div>
 
                 <div class="amount-display">

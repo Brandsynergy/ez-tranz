@@ -34,11 +34,14 @@ function initApp() {
     console.log('Found', numButtons.length, 'number buttons');
 
 // Currency selection handler
+const currencyHint = document.getElementById('currency-hint');
 currencySelect.addEventListener('change', () => {
     const selectedOption = currencySelect.options[currencySelect.selectedIndex];
     const symbol = selectedOption.getAttribute('data-symbol');
+    const minAmount = selectedOption.getAttribute('data-min');
     currencySymbol.textContent = symbol;
-    console.log('Currency changed to:', currencySelect.value, symbol);
+    currencyHint.textContent = `Minimum amount: ${symbol}${minAmount}`;
+    console.log('Currency changed to:', currencySelect.value, symbol, 'Min:', minAmount);
 });
 
 // Numpad functionality
