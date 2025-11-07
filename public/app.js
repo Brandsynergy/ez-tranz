@@ -35,14 +35,24 @@ function initApp() {
 
 // Currency selection handler
 const currencyHint = document.getElementById('currency-hint');
-currencySelect.addEventListener('change', () => {
+
+// Initialize hint with default currency on load
+function updateCurrencyHint() {
     const selectedOption = currencySelect.options[currencySelect.selectedIndex];
     const symbol = selectedOption.getAttribute('data-symbol');
     const minAmount = selectedOption.getAttribute('data-min');
     currencySymbol.textContent = symbol;
-    currencyHint.textContent = `Minimum amount: ${symbol}${minAmount}`;
-    console.log('Currency changed to:', currencySelect.value, symbol, 'Min:', minAmount);
-});
+    if (currencyHint) {
+        currencyHint.textContent = `Minimum amount: ${symbol}${minAmount}`;
+    }
+    console.log('Currency:', currencySelect.value, symbol, 'Min:', minAmount);
+}
+
+// Update on page load
+updateCurrencyHint();
+
+// Update when currency changes
+currencySelect.addEventListener('change', updateCurrencyHint);
 
 // Numpad functionality
 numButtons.forEach(btn => {
@@ -309,8 +319,10 @@ function generateReceipt(transaction) {
         .detail-row {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
             padding: 10px 0;
             border-bottom: 1px solid #e5e7eb;
+            gap: 15px;
         }
         .detail-row:last-child {
             border-bottom: none;
@@ -318,10 +330,15 @@ function generateReceipt(transaction) {
         .label {
             color: #6b7280;
             font-weight: 600;
+            flex-shrink: 0;
+            min-width: 140px;
         }
         .value {
             color: #1f2937;
             font-family: monospace;
+            text-align: right;
+            word-break: break-all;
+            font-size: 13px;
         }
         .status {
             text-align: center;
