@@ -500,15 +500,14 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       customer: stripeCustomer.id,
     });
     
-    // Create payment intent
+    // Create payment intent (remove off_session conflict)
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100),
       currency: currency || 'usd',
       customer: stripeCustomer.id,
       payment_method: paymentMethodId,
-      off_session: true,
       confirm: true,
-      setup_future_usage: 'off_session',
+      setup_future_usage: 'off_session', // Save for future use
     });
     
     // Get card details
