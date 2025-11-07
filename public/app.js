@@ -74,8 +74,20 @@ function applyBranding(settings) {
     const root = document.documentElement;
     if (settings.primaryColor) root.style.setProperty('--brand-primary', settings.primaryColor);
     if (settings.secondaryColor) root.style.setProperty('--brand-secondary', settings.secondaryColor);
-    // Update header logo/business name if provided
-    const logoEl = document.querySelector('.logo');
+    
+    // Show merchant logo if exists
+    if (settings.logoUrl) {
+        const logoContainer = document.getElementById('merchant-logo');
+        const logoImg = document.getElementById('merchant-logo-img');
+        if (logoContainer && logoImg) {
+            logoImg.src = settings.logoUrl;
+            logoImg.alt = settings.businessName || 'Merchant Logo';
+            logoContainer.style.display = 'block';
+        }
+    }
+    
+    // Update header business name if provided
+    const logoEl = document.getElementById('terminal-logo');
     if (logoEl && settings.businessName) {
         logoEl.textContent = `💳 ${settings.businessName}`;
     }
@@ -300,6 +312,7 @@ function generateReceipt(transaction) {
     const address = (BRANDING && BRANDING.address) ? BRANDING.address : '';
     const phone = (BRANDING && BRANDING.phone) ? BRANDING.phone : '';
     const footerMsg = (BRANDING && BRANDING.receiptFooter) ? BRANDING.receiptFooter : 'Thank you for your payment!';
+    const logoUrl = (BRANDING && BRANDING.logoUrl) ? BRANDING.logoUrl : '';
 
     // Create HTML receipt
     const receiptHTML = `
@@ -396,7 +409,8 @@ function generateReceipt(transaction) {
 <body>
     <div class="receipt">
         <div class="header">
-            <h1>📋 ${bizName}</h1>
+            ${logoUrl ? `<img src="${logoUrl}" alt="${bizName}" style="max-height:60px; max-width:200px; margin-bottom:12px; border-radius:8px;">` : '<h1>📋 ' + bizName + '</h1>'}
+            ${!logoUrl ? '<h1>📋 ' + bizName + '</h1>' : '<h2 style="margin-top:8px;">' + bizName + '</h2>'}
             <p>Payment Receipt</p>
             ${(address || phone) ? `<div class="biz-details">${[address, phone].filter(Boolean).join(' • ')}</div>` : ''}
         </div>
