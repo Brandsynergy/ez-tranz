@@ -21,6 +21,8 @@ function initApp() {
     const numButtons = document.querySelectorAll('.num-btn');
     const cancelQrBtn = document.getElementById('cancel-qr');
     const newTransactionBtn = document.getElementById('new-transaction');
+    const currencySelect = document.getElementById('currency-select');
+    const currencySymbol = document.getElementById('currency-symbol');
     
     // Check if elements exist
     if (!numButtons.length) {
@@ -29,6 +31,14 @@ function initApp() {
     }
     
     console.log('Found', numButtons.length, 'number buttons');
+
+// Currency selection handler
+currencySelect.addEventListener('change', () => {
+    const selectedOption = currencySelect.options[currencySelect.selectedIndex];
+    const symbol = selectedOption.getAttribute('data-symbol');
+    currencySymbol.textContent = symbol;
+    console.log('Currency changed to:', currencySelect.value, symbol);
+});
 
 // Numpad functionality
 numButtons.forEach(btn => {
@@ -75,7 +85,9 @@ chargeBtn.addEventListener('click', async () => {
     if (!isValidAmount(currentAmount)) return;
 
     const amount = parseFloat(currentAmount);
-    document.getElementById('qr-amount-text').textContent = amount.toFixed(2);
+    const selectedOption = currencySelect.options[currencySelect.selectedIndex];
+    const symbol = selectedOption.getAttribute('data-symbol');
+    document.getElementById('qr-amount-text').textContent = symbol + amount.toFixed(2);
 
     try {
         chargeBtn.classList.add('loading');
@@ -86,11 +98,14 @@ chargeBtn.addEventListener('click', async () => {
             throw new Error('QR Code library not loaded. Please refresh the page.');
         }
 
+        // Get selected currency
+        const currency = currencySelect.value;
+        
         // Create payment session
         const response = await fetch('/create-payment-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount })
+            body: JSON.stringify({ amount, currency })
         });
 
         if (!response.ok) {
@@ -170,7 +185,9 @@ function startStatusCheck() {
             
             if (data.status === 'paid') {
                 clearInterval(statusCheckInterval);
-                document.getElementById('success-amount').textContent = data.amount.toFixed(2);
+                const selectedOption = currencySelect.options[currencySelect.selectedIndex];
+                const symbol = selectedOption.getAttribute('data-symbol');
+                document.getElementById('success-amount').textContent = symbol + data.amount.toFixed(2);
                 showScreen(successScreen);
                 resetTransaction();
             }
