@@ -282,9 +282,13 @@ async function createDemoMerchant() {
         console.log('Demo merchant already exists');
     }
 }
-
 // Initialize with demo data
-createDemoMerchant();
+let DEMO_MERCHANT_ID = null;
+createDemoMerchant().then(demo => { if (demo) DEMO_MERCHANT_ID = demo.id; });
+
+function getDemoMerchantId() {
+    return DEMO_MERCHANT_ID;
+}
 
 module.exports = {
     // Auth
@@ -297,6 +301,7 @@ module.exports = {
     // Settings
     getMerchantSettings,
     updateMerchantSettings,
+    getDemoMerchantId,
     
     // Transactions
     createTransaction,
@@ -305,4 +310,5 @@ module.exports = {
     
     // Merchant
     getMerchantById
+};
 };

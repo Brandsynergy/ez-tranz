@@ -399,8 +399,21 @@ app.get('/api/merchant/me', requireAuth, (req, res) => {
 });
 
 // Get Merchant Settings (Branding)
-app.get('/api/merchant/settings', requireAuth, (req, res) => {
-  const settings = db.getMerchantSettings(req.merchantId);
+// If authenticated, return merchant's settings; otherwise return demo merchant settings for public terminal
+app.get('/api/merchant/settings', (req, res) => {
+  const sessionId = req.cookies.merchantSession;
+  let merchantId = null;
+  
+  if (sessionId) {
+    merchantId = db.validateSession(sessionId);
+  }
+  
+  // If not authenticated, use demo merchant for public terminal
+  if (!merchantId) {
+    merchantId = db.getDemoMerchantId();
+  }
+  
+  const settings = db.getMerchantSettings(merchantId);
   if (!settings) {
     return res.status(404).json({ error: 'Settings not found' });
   }
