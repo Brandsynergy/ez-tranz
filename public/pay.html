@@ -167,8 +167,8 @@
         const symbol = currencySymbols[currency] || '$';
         document.getElementById('amount-display').textContent = symbol + parseFloat(amount).toFixed(2);
         
-        // Initialize Stripe - Get publishable key from env
-        const stripe = Stripe('pk_test_51QKvK8P92nzBemQiuRlLlzRcKMBXYGpfYsIYWRfW1J5pAKLRfkJ6B8LMBwGqb4c7MLr6wN4jKXIJlK2h8Cy5Cp2F00nfwt7zcq'); // Your Stripe test key
+        // Initialize Stripe with your publishable key
+        const stripe = Stripe('pk_test_RzZQCulkGepxAOaQwLq2GhYR');
         const elements = stripe.elements();
         let cardElement = null;
         let currentCustomer = null;
