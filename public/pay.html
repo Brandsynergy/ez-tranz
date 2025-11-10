@@ -89,6 +89,15 @@
         .loading { text-align: center; padding: 40px; }
         .spinner { width: 50px; height: 50px; border: 4px solid #e5e7eb; border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Success/Failure Screens */
+        .result-icon { font-size: 80px; text-align: center; margin-bottom: 24px; animation: scaleIn 0.5s ease-out; }
+        .result-title { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 12px; }
+        .result-message { font-size: 16px; color: #6b7280; text-align: center; margin-bottom: 32px; line-height: 1.6; }
+        .success-title { color: #059669; }
+        .failure-title { color: #dc2626; }
+        .transaction-id { text-align: center; font-size: 12px; color: #9ca3af; margin-top: 24px; word-break: break-all; }
+        @keyframes scaleIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -145,6 +154,22 @@
                 <div class="spinner"></div>
                 <p style="color: #6b7280;">Processing payment...</p>
             </div>
+        </div>
+        
+        <!-- Step 5: Success -->
+        <div id="step-success" class="step">
+            <div class="result-icon">✅</div>
+            <h2 class="result-title success-title">Payment Successful!</h2>
+            <p class="result-message">Your payment has been processed successfully. You can close this window now.</p>
+            <div class="transaction-id">Transaction ID: <span id="success-txn-id">---</span></div>
+        </div>
+        
+        <!-- Step 6: Failure -->
+        <div id="step-failure" class="step">
+            <div class="result-icon">❌</div>
+            <h2 class="result-title failure-title">Payment Failed</h2>
+            <p class="result-message" id="failure-message">Something went wrong with your payment. Please try again.</p>
+            <button id="retry-btn" class="btn">Try Again</button>
         </div>
     </div>
     
@@ -268,13 +293,13 @@
                     throw new Error(data.error || 'Payment failed');
                 }
                 
-                // Payment successful!
-                window.location.href = `/success?session_id=${sessionId}`;
+                // Payment successful! Show success screen
+                document.getElementById('success-txn-id').textContent = data.paymentIntentId || sessionId;
+                showStep('step-success');
             } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.classList.add('show');
-                btn.disabled = false;
-                btn.textContent = 'Save Card & Pay';
+                // Show failure screen instead of inline error
+                document.getElementById('failure-message').textContent = error.message || 'Payment failed. Please check your card details and try again.';
+                showStep('step-failure');
             }
         });
         
@@ -308,13 +333,13 @@
                     throw new Error(data.error || 'Payment failed');
                 }
                 
-                // Payment successful!
-                window.location.href = `/success?session_id=${sessionId}`;
+                // Payment successful! Show success screen
+                document.getElementById('success-txn-id').textContent = data.paymentIntentId || sessionId;
+                showStep('step-success');
             } catch (error) {
-                errorDiv.textContent = error.message;
-                errorDiv.classList.add('show');
-                btn.disabled = false;
-                btn.textContent = '💳 Pay Now';
+                // Show failure screen instead of inline error
+                document.getElementById('failure-message').textContent = error.message || 'Payment failed. Please try again.';
+                showStep('step-failure');
             }
         });
         
@@ -322,6 +347,11 @@
             document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
             document.getElementById(stepId).classList.add('active');
         }
+        
+        // Retry button
+        document.getElementById('retry-btn').addEventListener('click', () => {
+            window.location.reload();
+        });
     </script>
 </body>
 </html>
