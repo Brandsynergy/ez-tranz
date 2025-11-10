@@ -9,6 +9,7 @@ const merchantSettings = new Map();
 const transactions = new Map();
 const sessions = new Map();
 const customers = new Map(); // Store customer phone numbers and Stripe IDs
+const bankAccounts = new Map(); // Store bank accounts per merchant
 
 // Helper function to generate IDs
 function generateId() {
@@ -252,6 +253,81 @@ function getCustomerByPhone(phoneNumber) {
 }
 
 // ==========================================
+// BANK ACCOUNTS
+// ==========================================
+
+function getBankAccounts(merchantId) {
+    return bankAccounts.get(merchantId) || [];
+}
+
+function createBankAccount(merchantId, accountData) {
+    const accountId = generateId();
+    const account = {
+        id: accountId,
+        merchantId,
+        accountHolderName: accountData.accountHolderName,
+        bankName: accountData.bankName,
+        accountNumber: accountData.accountNumber,
+        routingNumber: accountData.routingNumber,
+        accountType: accountData.accountType || 'checking',
+        currency: accountData.currency || 'usd',
+        isDefault: accountData.isDefault || false,
+        createdAt: new Date().toISOString()
+    };
+    
+    if (!bankAccounts.has(merchantId)) {
+        bankAccounts.set(merchantId, []);
+    }
+    
+    const accounts = bankAccounts.get(merchantId);
+    
+    // If this is marked as default, unset other defaults
+    if (account.isDefault) {
+        accounts.forEach(acc => acc.isDefault = false);
+    }
+    
+    // If this is the first account, make it default
+    if (accounts.length === 0) {
+        account.isDefault = true;
+    }
+    
+    accounts.push(account);
+    return account;
+}
+
+function setDefaultBankAccount(merchantId, accountId) {
+    const accounts = bankAccounts.get(merchantId) || [];
+    const account = accounts.find(acc => acc.id === accountId);
+    
+    if (!account) {
+        throw new Error('Bank account not found');
+    }
+    
+    // Unset all defaults
+    accounts.forEach(acc => acc.isDefault = false);
+    
+    // Set new default
+    account.isDefault = true;
+}
+
+function deleteBankAccount(merchantId, accountId) {
+    const accounts = bankAccounts.get(merchantId) || [];
+    const index = accounts.findIndex(acc => acc.id === accountId);
+    
+    if (index === -1) {
+        throw new Error('Bank account not found');
+    }
+    
+    const wasDefault = accounts[index].isDefault;
+    accounts.splice(index, 1);
+    
+    // If we deleted the default and there are remaining accounts, set the first as default
+    if (wasDefault && accounts.length > 0) {
+        accounts[0].isDefault = true;
+    }
+}
+
+// ==========================================
 // MERCHANT INFO
 // ==========================================
 
@@ -338,5 +414,11 @@ module.exports = {
     
     // Customers
     createOrUpdateCustomer,
-    getCustomerByPhone
+    getCustomerByPhone,
+    
+    // Bank Accounts
+    getBankAccounts,
+    createBankAccount,
+    setDefaultBankAccount,
+    deleteBankAccount
 };

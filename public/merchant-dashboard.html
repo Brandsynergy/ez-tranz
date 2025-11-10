@@ -86,12 +86,92 @@
         .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
         .badge-success { background: #d1fae5; color: #065f46; }
         
+        /* Bank Account Cards */
+        .bank-account-card {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .bank-account-card.default {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+        .bank-account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        .bank-account-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .default-badge {
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .bank-account-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .bank-detail-item {
+            font-size: 13px;
+        }
+        .bank-detail-label {
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .bank-detail-value {
+            color: #1f2937;
+            font-weight: 600;
+            font-family: monospace;
+        }
+        .bank-account-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-small {
+            padding: 6px 16px;
+            font-size: 13px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-set-default {
+            background: #10b981;
+            color: white;
+        }
+        .btn-set-default:hover {
+            background: #059669;
+        }
+        .btn-delete {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .btn-delete:hover {
+            background: #fecaca;
+        }
+        
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .dashboard { flex-direction: column; }
             .sidebar { width: 100%; }
             .main-content { padding: 16px; }
             .stats-grid { grid-template-columns: 1fr; }
+            .bank-account-details { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -116,6 +196,11 @@
                     <li class="nav-item">
                         <a href="#" class="nav-link" data-tab="branding">
                             <span>🎨</span><span>Branding</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-tab="bank-accounts">
+                            <span>🏦</span><span>Bank Accounts</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -229,6 +314,77 @@
                 <button id="save-branding-btn" class="btn-primary">Save Branding Settings</button>
             </div>
             
+            <!-- Bank Accounts Tab -->
+            <div id="bank-accounts-tab" class="tab-content">
+                <div id="bank-success" class="success-message">Bank account settings updated successfully!</div>
+                
+                <div class="settings-card">
+                    <h2 class="settings-title">Your Bank Accounts</h2>
+                    <p style="color: #6b7280; margin-bottom: 24px;">Add your business bank accounts to receive payments directly. You can have multiple accounts and set one as default.</p>
+                    
+                    <div id="bank-accounts-list">
+                        <div style="text-align: center; padding: 40px; color: #9ca3af;">Loading bank accounts...</div>
+                    </div>
+                    
+                    <button id="add-bank-account-btn" class="btn-primary" style="margin-top: 16px;">+ Add Bank Account</button>
+                </div>
+                
+                <!-- Add/Edit Bank Account Form (Hidden by default) -->
+                <div class="settings-card" id="bank-account-form" style="display: none;">
+                    <h2 class="settings-title">Add Bank Account</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Account Holder Name</label>
+                            <input type="text" id="account-holder-name" class="form-input" placeholder="John Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Bank Name</label>
+                            <input type="text" id="bank-name" class="form-input" placeholder="First Bank of America" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Account Number</label>
+                            <input type="text" id="account-number" class="form-input" placeholder="1234567890" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Routing Number (ACH/ABA)</label>
+                            <input type="text" id="routing-number" class="form-input" placeholder="021000021" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Account Type</label>
+                            <select id="account-type" class="form-input" required>
+                                <option value="checking">Checking</option>
+                                <option value="savings">Savings</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Currency</label>
+                            <select id="bank-currency" class="form-input" required>
+                                <option value="usd">USD - US Dollar</option>
+                                <option value="eur">EUR - Euro</option>
+                                <option value="gbp">GBP - British Pound</option>
+                                <option value="cad">CAD - Canadian Dollar</option>
+                                <option value="aud">AUD - Australian Dollar</option>
+                                <option value="ngn">NGN - Nigerian Naira</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="set-default" style="width: 20px; height: 20px;">
+                            <span class="form-label" style="margin: 0;">Set as default payout account</span>
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button id="save-bank-account-btn" class="btn-primary">Save Bank Account</button>
+                        <button id="cancel-bank-form-btn" class="btn-primary" style="background: #e5e7eb; color: #1f2937;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Transactions Tab -->
             <div id="transactions-tab" class="tab-content">
                 <div class="table-container">
@@ -278,6 +434,7 @@
             await loadStats();
             await loadSettings();
             await loadTransactions();
+            await loadBankAccounts();
         }
         
         // Load statistics
@@ -470,10 +627,168 @@
                 document.getElementById(`${tab}-tab`).classList.add('active');
                 
                 // Update page title
-                const titles = { overview: 'Dashboard Overview', branding: 'Branding Settings', transactions: 'Transaction History' };
+                const titles = { 
+                    overview: 'Dashboard Overview', 
+                    branding: 'Branding Settings', 
+                    'bank-accounts': 'Bank Accounts',
+                    transactions: 'Transaction History' 
+                };
                 document.getElementById('page-title').textContent = titles[tab];
+                
+                // Load bank accounts when tab is opened
+                if (tab === 'bank-accounts') {
+                    loadBankAccounts();
+                }
             });
         });
+        
+        // Bank Accounts Functions
+        let bankAccounts = [];
+        
+        async function loadBankAccounts() {
+            try {
+                const response = await fetch('/api/merchant/bank-accounts');
+                const data = await response.json();
+                bankAccounts = data.accounts || [];
+                renderBankAccounts();
+            } catch (error) {
+                console.error('Error loading bank accounts:', error);
+                document.getElementById('bank-accounts-list').innerHTML = 
+                    '<div style="text-align: center; padding: 40px; color: #dc2626;">Error loading bank accounts</div>';
+            }
+        }
+        
+        function renderBankAccounts() {
+            const container = document.getElementById('bank-accounts-list');
+            if (bankAccounts.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #9ca3af;">No bank accounts added yet</div>';
+                return;
+            }
+            
+            container.innerHTML = bankAccounts.map(account => `
+                <div class="bank-account-card ${account.isDefault ? 'default' : ''}">
+                    <div class="bank-account-header">
+                        <div class="bank-account-title">🏦 ${account.bankName}</div>
+                        ${account.isDefault ? '<span class="default-badge">Default</span>' : ''}
+                    </div>
+                    <div class="bank-account-details">
+                        <div class="bank-detail-item">
+                            <div class="bank-detail-label">Account Holder</div>
+                            <div class="bank-detail-value">${account.accountHolderName}</div>
+                        </div>
+                        <div class="bank-detail-item">
+                            <div class="bank-detail-label">Account Number</div>
+                            <div class="bank-detail-value">****${account.accountNumber.slice(-4)}</div>
+                        </div>
+                        <div class="bank-detail-item">
+                            <div class="bank-detail-label">Routing Number</div>
+                            <div class="bank-detail-value">${account.routingNumber}</div>
+                        </div>
+                        <div class="bank-detail-item">
+                            <div class="bank-detail-label">Account Type</div>
+                            <div class="bank-detail-value">${account.accountType.toUpperCase()}</div>
+                        </div>
+                        <div class="bank-detail-item">
+                            <div class="bank-detail-label">Currency</div>
+                            <div class="bank-detail-value">${account.currency.toUpperCase()}</div>
+                        </div>
+                    </div>
+                    <div class="bank-account-actions">
+                        ${!account.isDefault ? `<button class="btn-small btn-set-default" onclick="setDefaultAccount('${account.id}')">Set as Default</button>` : ''}
+                        <button class="btn-small btn-delete" onclick="deleteBankAccount('${account.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        document.getElementById('add-bank-account-btn').addEventListener('click', () => {
+            document.getElementById('bank-account-form').style.display = 'block';
+            document.getElementById('bank-account-form').scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        document.getElementById('cancel-bank-form-btn').addEventListener('click', () => {
+            document.getElementById('bank-account-form').style.display = 'none';
+            clearBankForm();
+        });
+        
+        document.getElementById('save-bank-account-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('save-bank-account-btn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            
+            try {
+                const accountData = {
+                    accountHolderName: document.getElementById('account-holder-name').value,
+                    bankName: document.getElementById('bank-name').value,
+                    accountNumber: document.getElementById('account-number').value,
+                    routingNumber: document.getElementById('routing-number').value,
+                    accountType: document.getElementById('account-type').value,
+                    currency: document.getElementById('bank-currency').value,
+                    isDefault: document.getElementById('set-default').checked
+                };
+                
+                const response = await fetch('/api/merchant/bank-accounts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(accountData)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('bank-success').classList.add('show');
+                    setTimeout(() => document.getElementById('bank-success').classList.remove('show'), 3000);
+                    document.getElementById('bank-account-form').style.display = 'none';
+                    clearBankForm();
+                    await loadBankAccounts();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || 'Failed to save bank account');
+                }
+            } catch (error) {
+                console.error('Error saving bank account:', error);
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Bank Account';
+            }
+        });
+        
+        async function setDefaultAccount(id) {
+            try {
+                const response = await fetch(`/api/merchant/bank-accounts/${id}/set-default`, {
+                    method: 'PUT'
+                });
+                if (response.ok) {
+                    await loadBankAccounts();
+                }
+            } catch (error) {
+                console.error('Error setting default account:', error);
+            }
+        }
+        
+        async function deleteBankAccount(id) {
+            if (!confirm('Are you sure you want to delete this bank account?')) return;
+            
+            try {
+                const response = await fetch(`/api/merchant/bank-accounts/${id}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    await loadBankAccounts();
+                }
+            } catch (error) {
+                console.error('Error deleting bank account:', error);
+            }
+        }
+        
+        function clearBankForm() {
+            document.getElementById('account-holder-name').value = '';
+            document.getElementById('bank-name').value = '';
+            document.getElementById('account-number').value = '';
+            document.getElementById('routing-number').value = '';
+            document.getElementById('account-type').value = 'checking';
+            document.getElementById('bank-currency').value = 'usd';
+            document.getElementById('set-default').checked = false;
+        }
         
         // Logout
         document.getElementById('logout-btn').addEventListener('click', async () => {

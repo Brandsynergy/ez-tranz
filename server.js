@@ -460,6 +460,62 @@ app.get('/api/merchant/transactions', requireAuth, (req, res) => {
 });
 
 // ==========================================
+// BANK ACCOUNT APIS
+// ==========================================
+
+// Get Bank Accounts
+app.get('/api/merchant/bank-accounts', requireAuth, (req, res) => {
+  try {
+    const accounts = db.getBankAccounts(req.merchantId);
+    res.json({ accounts });
+  } catch (error) {
+    console.error('Error fetching bank accounts:', error);
+    res.status(500).json({ error: 'Failed to fetch bank accounts' });
+  }
+});
+
+// Add Bank Account
+app.post('/api/merchant/bank-accounts', requireAuth, (req, res) => {
+  try {
+    const accountData = req.body;
+    
+    // Validate required fields
+    if (!accountData.accountHolderName || !accountData.bankName || 
+        !accountData.accountNumber || !accountData.routingNumber) {
+      return res.status(400).json({ error: 'All bank account fields are required' });
+    }
+    
+    const account = db.createBankAccount(req.merchantId, accountData);
+    res.json({ success: true, account });
+  } catch (error) {
+    console.error('Error creating bank account:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Set Default Bank Account
+app.put('/api/merchant/bank-accounts/:id/set-default', requireAuth, (req, res) => {
+  try {
+    db.setDefaultBankAccount(req.merchantId, req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error setting default account:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Delete Bank Account
+app.delete('/api/merchant/bank-accounts/:id', requireAuth, (req, res) => {
+  try {
+    db.deleteBankAccount(req.merchantId, req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting bank account:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ==========================================
 // CUSTOMER PAYMENT APIS (Saved Cards)
 // ==========================================
 
