@@ -297,6 +297,29 @@ downloadReceiptBtn.addEventListener('click', () => {
     }
 });
 
+// Share receipt buttons
+const shareWhatsAppBtn = document.getElementById('share-whatsapp');
+const shareEmailBtn = document.getElementById('share-email');
+const shareSmsBtn = document.getElementById('share-sms');
+
+shareWhatsAppBtn.addEventListener('click', () => {
+    if (currentTransaction) {
+        shareViaWhatsApp(currentTransaction);
+    }
+});
+
+shareEmailBtn.addEventListener('click', () => {
+    if (currentTransaction) {
+        shareViaEmail(currentTransaction);
+    }
+});
+
+shareSmsBtn.addEventListener('click', () => {
+    if (currentTransaction) {
+        shareViaSMS(currentTransaction);
+    }
+});
+
 // New transaction
 newTransactionBtn.addEventListener('click', () => {
     showScreen(amountScreen);
@@ -312,6 +335,64 @@ function resetTransaction() {
     if (statusCheckInterval) {
         clearInterval(statusCheckInterval);
     }
+}
+
+// Share receipt via WhatsApp
+function shareViaWhatsApp(transaction) {
+    const bizName = (BRANDING && BRANDING.businessName) ? BRANDING.businessName : 'EZ TRANZ';
+    const date = transaction.date.toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+    
+    const message = `🧾 *Payment Receipt - ${bizName}*\n\n` +
+                   `Amount: ${transaction.symbol}${transaction.amount.toFixed(2)} ${transaction.currency}\n` +
+                   `Transaction ID: ${transaction.id}\n` +
+                   `Date: ${date}\n` +
+                   `Status: ✅ Completed\n\n` +
+                   `Thank you for your payment!`;
+    
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+}
+
+// Share receipt via Email
+function shareViaEmail(transaction) {
+    const bizName = (BRANDING && BRANDING.businessName) ? BRANDING.businessName : 'EZ TRANZ';
+    const date = transaction.date.toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'long', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+    
+    const subject = `Payment Receipt - ${bizName} - ${transaction.id.substring(0, 12)}`;
+    const body = `Payment Receipt from ${bizName}\n\n` +
+                `Amount: ${transaction.symbol}${transaction.amount.toFixed(2)} ${transaction.currency}\n` +
+                `Transaction ID: ${transaction.id}\n` +
+                `Date & Time: ${date}\n` +
+                `Status: Completed\n\n` +
+                `Thank you for your payment!\n\n` +
+                `Powered by ${bizName} & Stripe`;
+    
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+}
+
+// Share receipt via SMS
+function shareViaSMS(transaction) {
+    const bizName = (BRANDING && BRANDING.businessName) ? BRANDING.businessName : 'EZ TRANZ';
+    const date = transaction.date.toLocaleDateString('en-US', { 
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+    
+    const message = `Payment Receipt - ${bizName}\n` +
+                   `Amount: ${transaction.symbol}${transaction.amount.toFixed(2)} ${transaction.currency}\n` +
+                   `ID: ${transaction.id.substring(0, 16)}...\n` +
+                   `Date: ${date}\n` +
+                   `Status: Completed`;
+    
+    const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
+    window.location.href = smsUrl;
 }
 
 // Generate and download receipt
