@@ -198,11 +198,48 @@
         const symbol = currencySymbols[currency] || '$';
         document.getElementById('amount-display').textContent = symbol + parseFloat(amount).toFixed(2);
         
+        // Load merchant branding if merchantId is available
+        if (merchantId) {
+            loadMerchantBranding(merchantId);
+        }
+        
         // Initialize Stripe with your publishable key
         const stripe = Stripe('pk_test_RzZQCulkGepxAOaQwLq2GhYR');
         const elements = stripe.elements();
         let cardElement = null;
         let currentCustomer = null;
+        
+        // Load and apply merchant branding
+        async function loadMerchantBranding(merchantId) {
+            try {
+                // Fetch merchant settings using the public endpoint
+                const response = await fetch('/api/merchant/settings');
+                if (!response.ok) return;
+                
+                const settings = await response.json();
+                
+                // Only apply if this is the right merchant
+                if (settings.merchantId == merchantId) {
+                    // Update merchant name
+                    const merchantNameEl = document.getElementById('merchant-name');
+                    if (settings.businessName) {
+                        merchantNameEl.textContent = settings.businessName;
+                    }
+                    
+                    // Apply brand colors to buttons and highlights
+                    if (settings.primaryColor) {
+                        const style = document.createElement('style');
+                        style.textContent = `
+                            .btn { background: linear-gradient(135deg, ${settings.primaryColor} 0%, ${settings.secondaryColor || settings.primaryColor} 100%) !important; }
+                            .info-box { border-color: ${settings.primaryColor}; background: ${settings.primaryColor}15; }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                }
+            } catch (error) {
+                console.log('Could not load merchant branding:', error);
+            }
+        }
         
         // Step 1: Phone Number
         document.getElementById('phone-btn').addEventListener('click', async () => {
