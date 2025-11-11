@@ -640,37 +640,26 @@ app.get('/api/customer/check', async (req, res) => {
     
     console.log('🔍 Checking customer with phone:', phone, 'merchantId:', merchantId);
     
-    // Get merchant's Stripe Connect account if provided
-    let stripeAccountId = null;
-    if (merchantId) {
-      const merchantStripe = db.getMerchantStripeAccount(merchantId);
-      if (merchantStripe && merchantStripe.stripeAccountId) {
-        stripeAccountId = merchantStripe.stripeAccountId;
-        console.log(`🔗 Checking on merchant's connected account: ${stripeAccountId}`);
-      }
-    }
-    
-    const createOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
-    
-    // First check local DB with merchantId
+    // Check local DB with merchantId
+    // Note: Customers are stored on PLATFORM account, scoped by merchantId in our DB
     let customer = db.getCustomerByPhone(phone, merchantId);
     
-    // If not in local DB, search Stripe directly on the correct account
+    // If not in local DB, search Stripe platform account
     if (!customer) {
-      console.log('🔍 Customer not in local DB, checking Stripe...');
+      console.log('🔍 Customer not in local DB, checking Stripe platform...');
       const stripeCustomers = await stripe.customers.search({
         query: `phone:'${phone}'`,
-      }, createOptions);
+      });
       
       if (stripeCustomers.data.length > 0) {
         const stripeCustomer = stripeCustomers.data[0];
         console.log('✅ Found customer in Stripe:', stripeCustomer.id);
         
-        // Get payment methods
+        // Get payment methods from platform account
         const paymentMethods = await stripe.paymentMethods.list({
           customer: stripeCustomer.id,
           type: 'card',
-        }, createOptions);
+        });
         
         if (paymentMethods.data.length > 0) {
           const card = paymentMethods.data[0].card;
@@ -682,7 +671,7 @@ app.get('/api/customer/check', async (req, res) => {
             card.last4,
             card.brand,
             merchantId,
-            stripeAccountId
+            null  // stripeAccountId - always null for platform accounts
           );
           
           console.log('✅ Customer restored to local DB');
@@ -729,55 +718,49 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       }
     }
     
-    const createOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
-    
-    // Create Stripe customer first (on connected account if available)
+    // ALWAYS create customer on PLATFORM account (not connected account)
+    // This is the correct Stripe Connect pattern for Direct Charges
     const stripeCustomer = await stripe.customers.create({
       phone,
-    }, createOptions);
+      payment_method: paymentMethodId,
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
     
-    console.log(`✅ Customer created: ${stripeCustomer.id}`);
+    console.log(`✅ Customer created on platform: ${stripeCustomer.id}`);
     
-    // Clone payment method to connected account by creating a payment intent with it
-    // This automatically clones the payment method to the connected account
-    let actualPaymentMethodId = paymentMethodId;
-    if (stripeAccountId) {
-      console.log('🔄 Cloning payment method via setup intent...');
-      // Create a setup intent to clone the payment method
-      const setupIntent = await stripe.setupIntents.create({
-        customer: stripeCustomer.id,
-        payment_method: paymentMethodId,
-        confirm: true,
-        payment_method_types: ['card'],
-      }, createOptions);
-      
-      // The cloned payment method is now attached to the customer on the connected account
-      actualPaymentMethodId = setupIntent.payment_method;
-      console.log(`✅ Payment method cloned to connected account: ${actualPaymentMethodId}`);
-    } else {
-      // Platform account - just attach normally
-      await stripe.paymentMethods.attach(paymentMethodId, {
-        customer: stripeCustomer.id,
-      });
-      console.log(`✅ Payment method attached`);
-    }
+    // Attach payment method to platform customer
+    await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: stripeCustomer.id,
+    });
     
-    // Create payment intent with the CLONED payment method
-    const paymentIntent = await stripe.paymentIntents.create({
+    console.log(`✅ Payment method attached: ${paymentMethodId}`);
+    
+    // Create payment intent using Direct Charges pattern
+    // Customer and PM on platform, but payment goes to connected account
+    const paymentIntentOptions = {
       amount: Math.round(amount * 100),
       currency: currency || 'usd',
       customer: stripeCustomer.id,
-      payment_method: actualPaymentMethodId,  // Use cloned PM, not original
+      payment_method: paymentMethodId,
       confirm: true,
       setup_future_usage: 'off_session',
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: 'never' // Disable redirect-based payment methods
-      }
-    }, createOptions);
+    };
     
-    // Get card details from the actual payment method used
-    const paymentMethod = await stripe.paymentMethods.retrieve(actualPaymentMethodId, createOptions);
+    // If merchant has connected account, use Direct Charges
+    if (stripeAccountId) {
+      paymentIntentOptions.transfer_data = {
+        destination: stripeAccountId,
+      };
+      paymentIntentOptions.application_fee_amount = Math.round(amount * 100 * 0.01); // 1% platform fee
+      console.log(`🔗 Creating Direct Charge to connected account: ${stripeAccountId}`);
+    }
+    
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
+    
+    // Get card details
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
     
     // Save customer to database with merchantId and stripeAccountId
     db.createOrUpdateCustomer(
@@ -786,7 +769,7 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       paymentMethod.card.last4,
       paymentMethod.card.brand,
       merchantId,
-      stripeAccountId
+      null  // Always null - customers on platform
     );
     
     // Mark session as completed
@@ -830,19 +813,17 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
       }
     }
     
-    const createOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
-    
     // Get customer from database with merchantId
     const customer = db.getCustomerByPhone(phone, merchantId);
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
     }
     
-    // Get customer's payment methods from Stripe
+    // Get customer's payment methods from platform Stripe account
     const paymentMethods = await stripe.paymentMethods.list({
       customer: customer.stripeCustomerId,
       type: 'card',
-    }, createOptions);
+    });
     
     if (paymentMethods.data.length === 0) {
       return res.status(400).json({ error: 'No saved payment method found' });
@@ -850,15 +831,26 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
     
     const paymentMethodId = paymentMethods.data[0].id;
     
-    // Create payment intent with saved card (no CVC required)
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Create payment intent using Direct Charges pattern
+    const paymentIntentOptions = {
       amount: Math.round(amount * 100),
       currency: currency || 'usd',
       customer: customer.stripeCustomerId,
       payment_method: paymentMethodId,
       off_session: true,
       confirm: true
-    }, createOptions);
+    };
+    
+    // If merchant has connected account, use Direct Charges
+    if (stripeAccountId) {
+      paymentIntentOptions.transfer_data = {
+        destination: stripeAccountId,
+      };
+      paymentIntentOptions.application_fee_amount = Math.round(amount * 100 * 0.01); // 1% platform fee
+      console.log(`🔗 Creating Direct Charge to connected account: ${stripeAccountId}`);
+    }
+    
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
     
     // Mark session as completed
     if (paymentSessions.has(sessionId)) {
