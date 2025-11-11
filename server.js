@@ -516,6 +516,112 @@ app.delete('/api/merchant/bank-accounts/:id', requireAuth, (req, res) => {
 });
 
 // ==========================================
+// STRIPE CONNECT ENDPOINTS
+// ==========================================
+
+// Get Stripe Connect OAuth URL
+app.get('/api/stripe/connect-url', requireAuth, async (req, res) => {
+  try {
+    if (!process.env.STRIPE_CLIENT_ID) {
+      return res.status(500).json({ error: 'Stripe Connect not configured. Please contact support.' });
+    }
+    
+    const state = req.merchantId; // Use merchant ID as state parameter for security
+    
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: process.env.STRIPE_CLIENT_ID,
+      scope: 'read_write',
+      redirect_uri: `${process.env.APP_URL || 'http://localhost:3000'}/api/stripe/callback`,
+      state: state,
+      'stripe_user[business_type]': 'individual'
+    });
+    
+    const connectUrl = `https://connect.stripe.com/oauth/authorize?${params.toString()}`;
+    
+    console.log(`🔗 Generated Stripe Connect URL for merchant: ${req.merchantId}`);
+    res.json({ url: connectUrl });
+  } catch (error) {
+    console.error('❌ Error generating connect URL:', error);
+    res.status(500).json({ error: 'Failed to generate connect URL' });
+  }
+});
+
+// Handle Stripe OAuth callback
+app.get('/api/stripe/callback', async (req, res) => {
+  try {
+    const { code, state, error } = req.query;
+    const merchantId = state;
+    
+    // Handle OAuth errors
+    if (error) {
+      console.error(`❌ Stripe OAuth error: ${error}`);
+      return res.redirect('/merchant-dashboard.html?stripe_error=' + error);
+    }
+    
+    if (!code) {
+      console.error('❌ No authorization code received');
+      return res.redirect('/merchant-dashboard.html?stripe_error=no_code');
+    }
+    
+    console.log(`🔐 Processing Stripe Connect callback for merchant: ${merchantId}`);
+    
+    // Exchange authorization code for Stripe Account ID
+    const response = await stripe.oauth.token({
+      grant_type: 'authorization_code',
+      code: code,
+    });
+    
+    const stripeAccountId = response.stripe_user_id;
+    
+    // Save to database
+    db.updateMerchantStripeAccount(merchantId, stripeAccountId, 'connected');
+    
+    console.log(`✅ Merchant ${merchantId} successfully connected Stripe account: ${stripeAccountId}`);
+    
+    // Redirect back to dashboard with success message
+    res.redirect('/merchant-dashboard.html?stripe_connected=success');
+  } catch (error) {
+    console.error('❌ OAuth callback error:', error);
+    res.redirect('/merchant-dashboard.html?stripe_error=connection_failed');
+  }
+});
+
+// Get Stripe Connect account status
+app.get('/api/stripe/account-status', requireAuth, async (req, res) => {
+  try {
+    const stripeInfo = db.getMerchantStripeAccount(req.merchantId);
+    
+    if (!stripeInfo) {
+      return res.json({ 
+        stripeAccountId: null, 
+        stripeAccountStatus: 'not_connected' 
+      });
+    }
+    
+    res.json(stripeInfo);
+  } catch (error) {
+    console.error('❌ Error getting account status:', error);
+    res.status(500).json({ error: 'Failed to get status' });
+  }
+});
+
+// Disconnect Stripe account
+app.post('/api/stripe/disconnect', requireAuth, async (req, res) => {
+  try {
+    console.log(`🔓 Disconnecting Stripe account for merchant: ${req.merchantId}`);
+    
+    db.updateMerchantStripeAccount(req.merchantId, null, 'not_connected');
+    
+    console.log(`✅ Successfully disconnected Stripe account`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Error disconnecting:', error);
+    res.status(500).json({ error: 'Failed to disconnect' });
+  }
+});
+
+// ==========================================
 // CUSTOMER PAYMENT APIS (Saved Cards)
 // ==========================================
 
@@ -588,25 +694,36 @@ app.get('/api/customer/check', async (req, res) => {
 // Save new customer card and process payment
 app.post('/api/customer/save-and-pay', async (req, res) => {
   try {
-    const { phone, paymentMethodId, sessionId, amount, currency } = req.body;
+    const { phone, paymentMethodId, sessionId, amount, currency, merchantId } = req.body;
     
     if (!phone || !paymentMethodId || !amount) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
-    // Create Stripe customer
+    // Get merchant's Stripe Connect account
+    let stripeAccountId = null;
+    if (merchantId) {
+      const merchantStripe = db.getMerchantStripeAccount(merchantId);
+      if (merchantStripe && merchantStripe.stripeAccountId) {
+        stripeAccountId = merchantStripe.stripeAccountId;
+        console.log(`🔗 Using merchant's connected account: ${stripeAccountId}`);
+      }
+    }
+    
+    // Create Stripe customer (on connected account if available)
+    const createOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
     const stripeCustomer = await stripe.customers.create({
       phone,
       payment_method: paymentMethodId,
       invoice_settings: {
         default_payment_method: paymentMethodId,
       },
-    });
+    }, createOptions);
     
     // Attach payment method to customer
     await stripe.paymentMethods.attach(paymentMethodId, {
       customer: stripeCustomer.id,
-    });
+    }, createOptions);
     
     // Create payment intent with manual card confirmation only
     const paymentIntent = await stripe.paymentIntents.create({
@@ -620,7 +737,7 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
         enabled: true,
         allow_redirects: 'never' // Disable redirect-based payment methods
       }
-    });
+    }, createOptions);
     
     // Get card details
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
@@ -656,13 +773,25 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
 // Pay with saved card - no CVC needed for returning customers
 app.post('/api/customer/pay-with-saved', async (req, res) => {
   try {
-    const { phone, sessionId, amount, currency } = req.body;
+    const { phone, sessionId, amount, currency, merchantId } = req.body;
     
     if (!phone || !amount) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
     
     console.log('💳 Processing payment for returning customer:', phone);
+    
+    // Get merchant's Stripe Connect account
+    let stripeAccountId = null;
+    if (merchantId) {
+      const merchantStripe = db.getMerchantStripeAccount(merchantId);
+      if (merchantStripe && merchantStripe.stripeAccountId) {
+        stripeAccountId = merchantStripe.stripeAccountId;
+        console.log(`🔗 Using merchant's connected account: ${stripeAccountId}`);
+      }
+    }
+    
+    const createOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
     
     // Get customer from database
     const customer = db.getCustomerByPhone(phone);
@@ -674,7 +803,7 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
     const paymentMethods = await stripe.paymentMethods.list({
       customer: customer.stripeCustomerId,
       type: 'card',
-    });
+    }, createOptions);
     
     if (paymentMethods.data.length === 0) {
       return res.status(400).json({ error: 'No saved payment method found' });
@@ -690,7 +819,7 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
       payment_method: paymentMethodId,
       off_session: true,
       confirm: true
-    });
+    }, createOptions);
     
     // Mark session as completed
     if (paymentSessions.has(sessionId)) {
