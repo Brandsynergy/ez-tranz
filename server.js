@@ -772,6 +772,20 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       null  // Always null - customers on platform
     );
     
+    // Save transaction to database
+    if (merchantId) {
+      db.createTransaction(merchantId, {
+        amount: parseFloat(amount),
+        currency: (currency || 'usd').toUpperCase(),
+        status: 'completed',
+        paymentIntentId: paymentIntent.id,
+        customerPhone: phone,
+        last4: paymentMethod.card.last4,
+        cardBrand: paymentMethod.card.brand
+      });
+      console.log('✅ Transaction saved to database');
+    }
+    
     // Mark session as completed
     if (paymentSessions.has(sessionId)) {
       const session = paymentSessions.get(sessionId);
@@ -851,6 +865,23 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
     }
     
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentOptions);
+    
+    // Get card details for transaction record
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    
+    // Save transaction to database
+    if (merchantId) {
+      db.createTransaction(merchantId, {
+        amount: parseFloat(amount),
+        currency: (currency || 'usd').toUpperCase(),
+        status: 'completed',
+        paymentIntentId: paymentIntent.id,
+        customerPhone: phone,
+        last4: paymentMethod.card.last4,
+        cardBrand: paymentMethod.card.brand
+      });
+      console.log('✅ Transaction saved to database');
+    }
     
     // Mark session as completed
     if (paymentSessions.has(sessionId)) {

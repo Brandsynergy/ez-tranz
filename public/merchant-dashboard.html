@@ -703,9 +703,9 @@
                     <tr>
                         <td>${new Date(txn.createdAt).toLocaleDateString()}</td>
                         <td>${txn.amount.toFixed(2)}</td>
-                        <td>${txn.currency.toUpperCase()}</td>
-                        <td><span class="badge badge-success">Completed</span></td>
-                        <td style="font-family: monospace; font-size: 12px;">${txn.stripeSessionId.substring(0, 20)}...</td>
+                        <td>${txn.currency}</td>
+                        <td><span class="badge badge-success">${txn.status || 'Completed'}</span></td>
+                        <td style="font-family: monospace; font-size: 12px;">${(txn.paymentIntentId || txn.id).substring(0, 20)}...</td>
                     </tr>
                 `).join('');
             } catch (error) {
