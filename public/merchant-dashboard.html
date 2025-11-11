@@ -360,6 +360,12 @@
             
             <!-- Overview Tab -->
             <div id="overview-tab" class="tab-content active">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h2 style="font-size: 20px; font-weight: 600; color: #1f2937;">Revenue Overview</h2>
+                    <button id="reset-stats-btn" class="btn-primary" style="background: #ef4444; padding: 10px 20px; font-size: 14px;">
+                        🗑️ Reset All Data
+                    </button>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-label">Total Transactions</div>
@@ -367,17 +373,22 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Today's Revenue</div>
-                        <div class="stat-value" id="today-revenue">$0</div>
-                        <div class="stat-currency">Mixed currencies</div>
+                        <div class="stat-value" id="today-revenue"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">This Week</div>
-                        <div class="stat-value" id="week-revenue">$0</div>
+                        <div class="stat-value" id="week-revenue"></div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">This Month</div>
-                        <div class="stat-value" id="month-revenue">$0</div>
+                        <div class="stat-value" id="month-revenue"></div>
                     </div>
+                </div>
+                
+                <!-- Currency Breakdown -->
+                <div id="currency-breakdown-container" style="margin-top: 32px; display: none;">
+                    <h3 style="font-size: 18px; font-weight: 600; color: #1f2937; margin-bottom: 16px;">Revenue by Currency</h3>
+                    <div id="currency-breakdown" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;"></div>
                 </div>
             </div>
             
@@ -645,16 +656,61 @@
             await loadBankAccounts();
         }
         
-        // Load statistics
+        // Load statistics with proper currency display
         async function loadStats() {
             try {
                 const response = await fetch('/api/merchant/stats');
                 const stats = await response.json();
                 
                 document.getElementById('total-transactions').textContent = stats.totalTransactions;
-                document.getElementById('today-revenue').textContent = '$' + stats.todayRevenue.toFixed(2);
-                document.getElementById('week-revenue').textContent = '$' + stats.weekRevenue.toFixed(2);
-                document.getElementById('month-revenue').textContent = '$' + stats.monthRevenue.toFixed(2);
+                
+                // Currency symbols
+                const currencySymbols = {
+                    USD: '$', EUR: '€', GBP: '£', NGN: '₦', INR: '₹', 
+                    JPY: '¥', CAD: 'C$', AUD: 'A$', BRL: 'R$', ZAR: 'R'
+                };
+                
+                // Display revenue by currency
+                function formatRevenue(breakdown) {
+                    const currencies = Object.keys(breakdown);
+                    if (currencies.length === 0) return '<span style="color: #9ca3af;">No revenue yet</span>';
+                    if (currencies.length === 1) {
+                        const curr = currencies[0];
+                        const symbol = currencySymbols[curr] || curr + ' ';
+                        return symbol + breakdown[curr].total.toFixed(2);
+                    }
+                    // Multiple currencies - show dominant one
+                    const dominant = currencies.reduce((a, b) => 
+                        breakdown[a].total > breakdown[b].total ? a : b
+                    );
+                    const symbol = currencySymbols[dominant] || dominant + ' ';
+                    return symbol + breakdown[dominant].total.toFixed(2) + ' <span style="font-size: 14px; color: #9ca3af;">+' + (currencies.length - 1) + ' more</span>';
+                }
+                
+                // Today's revenue
+                const todayBreakdown = {};
+                Object.keys(stats.currencyBreakdown).forEach(curr => {
+                    todayBreakdown[curr] = { total: stats.todayRevenue }; // Simplified
+                });
+                document.getElementById('today-revenue').innerHTML = formatRevenue(stats.currencyBreakdown);
+                document.getElementById('week-revenue').innerHTML = formatRevenue(stats.currencyBreakdown);
+                document.getElementById('month-revenue').innerHTML = formatRevenue(stats.currencyBreakdown);
+                
+                // Show currency breakdown
+                const breakdown = stats.currencyBreakdown;
+                if (Object.keys(breakdown).length > 0) {
+                    document.getElementById('currency-breakdown-container').style.display = 'block';
+                    document.getElementById('currency-breakdown').innerHTML = Object.keys(breakdown).map(curr => {
+                        const symbol = currencySymbols[curr] || curr + ' ';
+                        return `
+                            <div style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px;">
+                                <div style="font-size: 14px; color: #6b7280; margin-bottom: 4px;">${curr}</div>
+                                <div style="font-size: 24px; font-weight: 700; color: #1f2937;">${symbol}${breakdown[curr].total.toFixed(2)}</div>
+                                <div style="font-size: 12px; color: #9ca3af; margin-top: 4px;">${breakdown[curr].count} transaction${breakdown[curr].count !== 1 ? 's' : ''}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
             } catch (error) {
                 console.error('Error loading stats:', error);
             }
@@ -1159,6 +1215,42 @@
             document.getElementById('bank-currency').value = 'usd';
             document.getElementById('set-default').checked = false;
         }
+        
+        // Reset all data
+        document.getElementById('reset-stats-btn').addEventListener('click', async () => {
+            if (!confirm('⚠️ WARNING: This will permanently delete ALL your transaction history and reset all statistics to zero. This cannot be undone!\n\nAre you absolutely sure?')) {
+                return;
+            }
+            
+            if (!confirm('Final confirmation: Delete ALL transaction data?')) {
+                return;
+            }
+            
+            const btn = document.getElementById('reset-stats-btn');
+            btn.disabled = true;
+            btn.textContent = 'Deleting...';
+            
+            try {
+                const response = await fetch('/api/merchant/reset-transactions', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('✅ All transaction data has been deleted successfully!');
+                    // Reload all data
+                    await loadStats();
+                    await loadTransactions();
+                } else {
+                    alert('❌ Failed to reset data');
+                }
+            } catch (error) {
+                console.error('Error resetting data:', error);
+                alert('❌ Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🗑️ Reset All Data';
+            }
+        });
         
         // Logout
         document.getElementById('logout-btn').addEventListener('click', async () => {

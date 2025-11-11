@@ -464,6 +464,18 @@ app.get('/api/merchant/transactions', requireAuth, (req, res) => {
   res.json(result);
 });
 
+// Reset all transactions (delete all transaction history)
+app.post('/api/merchant/reset-transactions', requireAuth, (req, res) => {
+  try {
+    db.clearMerchantTransactions(req.merchantId);
+    console.log(`🗑️ Cleared all transactions for merchant: ${req.merchantId}`);
+    res.json({ success: true, message: 'All transactions deleted' });
+  } catch (error) {
+    console.error('Error resetting transactions:', error);
+    res.status(500).json({ error: 'Failed to reset transactions' });
+  }
+});
+
 // ==========================================
 // BANK ACCOUNT APIS
 // ==========================================

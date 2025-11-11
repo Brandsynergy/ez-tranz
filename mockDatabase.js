@@ -190,7 +190,7 @@ function getTransactionStats(merchantId) {
         monthRevenue: 0,
         currencyBreakdown: {}
     };
-
+    
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
@@ -228,6 +228,11 @@ function getTransactionStats(merchantId) {
     });
 
     return stats;
+}
+
+function clearMerchantTransactions(merchantId) {
+    transactions.set(merchantId, []);
+    console.log(`🗑️ Cleared ${merchantId}'s transaction history`);
 }
 
 // ==========================================
@@ -441,6 +446,7 @@ module.exports = {
     createTransaction,
     getMerchantTransactions,
     getTransactionStats,
+    clearMerchantTransactions,
     
     // Merchant
     getMerchantById,
