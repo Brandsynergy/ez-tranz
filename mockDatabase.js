@@ -36,6 +36,8 @@ async function createMerchant(email, password, businessName) {
         email,
         password: hashedPassword,
         businessName,
+        stripeAccountId: null, // Stripe Connect account ID
+        stripeAccountStatus: 'not_connected', // not_connected, pending, connected
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
@@ -341,6 +343,33 @@ function getMerchantById(merchantId) {
 }
 
 // ==========================================
+// STRIPE CONNECT
+// ==========================================
+
+function updateMerchantStripeAccount(merchantId, stripeAccountId, status = 'connected') {
+    const merchant = merchants.get(merchantId);
+    if (!merchant) {
+        throw new Error('Merchant not found');
+    }
+    
+    merchant.stripeAccountId = stripeAccountId;
+    merchant.stripeAccountStatus = status;
+    merchant.updatedAt = new Date().toISOString();
+    
+    return getMerchantById(merchantId);
+}
+
+function getMerchantStripeAccount(merchantId) {
+    const merchant = merchants.get(merchantId);
+    if (!merchant) return null;
+    
+    return {
+        stripeAccountId: merchant.stripeAccountId,
+        stripeAccountStatus: merchant.stripeAccountStatus
+    };
+}
+
+// ==========================================
 // DEMO DATA (for testing)
 // ==========================================
 
@@ -411,6 +440,10 @@ module.exports = {
     
     // Merchant
     getMerchantById,
+    
+    // Stripe Connect
+    updateMerchantStripeAccount,
+    getMerchantStripeAccount,
     
     // Customers
     createOrUpdateCustomer,
