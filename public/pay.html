@@ -25,6 +25,8 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
         .logo { text-align: center; font-size: 48px; margin-bottom: 8px; }
+        .merchant-logo { text-align: center; margin-bottom: 16px; }
+        .merchant-logo img { max-height: 80px; max-width: 200px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .title { text-align: center; font-size: 24px; font-weight: 700; color: #1f2937; margin-bottom: 8px; }
         .amount { text-align: center; font-size: 48px; font-weight: 700; color: #6366f1; margin: 24px 0; }
         .step { display: none; }
@@ -109,7 +111,10 @@
 </head>
 <body>
     <div class="container">
-        <div class="logo">💳</div>
+        <div id="merchant-logo-container" class="merchant-logo" style="display: none;">
+            <img id="merchant-logo-img" src="" alt="Merchant Logo">
+        </div>
+        <div class="logo" id="default-logo">💳</div>
         <h1 class="title" id="merchant-name">EZ TRANZ</h1>
         <div class="amount" id="amount-display">$0.00</div>
         
@@ -220,6 +225,18 @@
                 
                 // Only apply if this is the right merchant
                 if (settings.merchantId == merchantId) {
+                    // Show merchant logo if available
+                    if (settings.logoUrl) {
+                        const logoContainer = document.getElementById('merchant-logo-container');
+                        const logoImg = document.getElementById('merchant-logo-img');
+                        const defaultLogo = document.getElementById('default-logo');
+                        
+                        logoImg.src = settings.logoUrl;
+                        logoImg.alt = settings.businessName || 'Merchant Logo';
+                        logoContainer.style.display = 'block';
+                        defaultLogo.style.display = 'none'; // Hide emoji logo
+                    }
+                    
                     // Update merchant name
                     const merchantNameEl = document.getElementById('merchant-name');
                     if (settings.businessName) {
