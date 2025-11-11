@@ -73,9 +73,15 @@
         /* Logo Upload */
         .logo-upload-area { border: 2px dashed #e5e7eb; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; }
         .logo-upload-area:hover { border-color: #6366f1; background: #f9fafb; }
-        .logo-preview { max-width: 200px; max-height: 100px; margin: 16px auto; display: none; }
-        .logo-preview img { max-width: 100%; height: auto; border-radius: 8px; }
+        .logo-upload-area.has-logo { display: none; }
+        .logo-preview { max-width: 100%; padding: 24px; border: 2px solid #e5e7eb; border-radius: 12px; text-align: center; display: none; position: relative; }
+        .logo-preview img { max-width: 200px; max-height: 100px; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .logo-preview.show { display: block; }
+        .logo-actions { margin-top: 16px; display: flex; gap: 12px; justify-content: center; }
+        .btn-change-logo { padding: 8px 20px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn-change-logo:hover { background: #4f46e5; }
+        .btn-remove-logo { padding: 8px 20px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .btn-remove-logo:hover { background: #dc2626; }
         .file-input { display: none; }
         
         /* Transaction Table */
@@ -380,6 +386,10 @@
                         </div>
                         <div class="logo-preview" id="logo-preview">
                             <img id="logo-preview-img" src="" alt="Logo Preview">
+                            <div class="logo-actions">
+                                <button type="button" class="btn-change-logo" id="change-logo-btn">Change Logo</button>
+                                <button type="button" class="btn-remove-logo" id="remove-logo-btn">Remove Logo</button>
+                            </div>
                         </div>
                         <input type="hidden" id="logo-url" value="">
                     </div>
@@ -588,8 +598,7 @@
                 
                 // Show logo preview if exists
                 if (settings.logoUrl) {
-                    document.getElementById('logo-preview-img').src = settings.logoUrl;
-                    document.getElementById('logo-preview').classList.add('show');
+                    showLogoPreview(settings.logoUrl);
                 }
                 
                 updateColorPreview('primary', settings.primaryColor);
@@ -654,6 +663,21 @@
         const logoPreview = document.getElementById('logo-preview');
         const logoPreviewImg = document.getElementById('logo-preview-img');
         
+        function showLogoPreview(url) {
+            logoPreviewImg.src = url;
+            logoPreview.classList.add('show');
+            logoUploadArea.classList.add('has-logo');
+            document.getElementById('logo-url').value = url;
+        }
+        
+        function hideLogoPreview() {
+            logoPreview.classList.remove('show');
+            logoUploadArea.classList.remove('has-logo');
+            logoPreviewImg.src = '';
+            document.getElementById('logo-url').value = '';
+            logoInput.value = '';
+        }
+        
         logoUploadArea.addEventListener('click', () => logoInput.click());
         
         logoInput.addEventListener('change', (e) => {
@@ -665,11 +689,19 @@
                 }
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    logoPreviewImg.src = e.target.result;
-                    logoPreview.classList.add('show');
-                    document.getElementById('logo-url').value = e.target.result;
+                    showLogoPreview(e.target.result);
                 };
                 reader.readAsDataURL(file);
+            }
+        });
+        
+        document.getElementById('change-logo-btn').addEventListener('click', () => {
+            logoInput.click();
+        });
+        
+        document.getElementById('remove-logo-btn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to remove your logo?')) {
+                hideLogoPreview();
             }
         });
         
