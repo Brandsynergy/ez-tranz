@@ -661,6 +661,12 @@
             // Update sidebar logo and business name
             const sidebarLogoImg = document.getElementById('sidebar-logo-img');
             const sidebarLogoText = document.getElementById('sidebar-logo-text');
+            const merchantNameEl = document.getElementById('merchant-name');
+            
+            // Update the merchant name in the info section
+            if (settings.businessName) {
+                merchantNameEl.textContent = settings.businessName;
+            }
             
             if (settings.logoUrl) {
                 // Show logo image, hide text
