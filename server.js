@@ -633,22 +633,34 @@ app.post('/api/stripe/disconnect', requireAuth, async (req, res) => {
 // Check if customer exists by phone number
 app.get('/api/customer/check', async (req, res) => {
   try {
-    const { phone } = req.query;
+    const { phone, merchantId } = req.query;
     if (!phone) {
       return res.status(400).json({ error: 'Phone number required' });
     }
     
-    console.log('🔍 Checking customer with phone:', phone);
+    console.log('🔍 Checking customer with phone:', phone, 'merchantId:', merchantId);
     
-    // First check local DB
-    let customer = db.getCustomerByPhone(phone);
+    // Get merchant's Stripe Connect account if provided
+    let stripeAccountId = null;
+    if (merchantId) {
+      const merchantStripe = db.getMerchantStripeAccount(merchantId);
+      if (merchantStripe && merchantStripe.stripeAccountId) {
+        stripeAccountId = merchantStripe.stripeAccountId;
+        console.log(`🔗 Checking on merchant's connected account: ${stripeAccountId}`);
+      }
+    }
     
-    // If not in local DB, search Stripe directly
+    const createOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
+    
+    // First check local DB with merchantId
+    let customer = db.getCustomerByPhone(phone, merchantId);
+    
+    // If not in local DB, search Stripe directly on the correct account
     if (!customer) {
       console.log('🔍 Customer not in local DB, checking Stripe...');
       const stripeCustomers = await stripe.customers.search({
         query: `phone:'${phone}'`,
-      });
+      }, createOptions);
       
       if (stripeCustomers.data.length > 0) {
         const stripeCustomer = stripeCustomers.data[0];
@@ -658,7 +670,7 @@ app.get('/api/customer/check', async (req, res) => {
         const paymentMethods = await stripe.paymentMethods.list({
           customer: stripeCustomer.id,
           type: 'card',
-        });
+        }, createOptions);
         
         if (paymentMethods.data.length > 0) {
           const card = paymentMethods.data[0].card;
@@ -668,7 +680,9 @@ app.get('/api/customer/check', async (req, res) => {
             phone,
             stripeCustomer.id,
             card.last4,
-            card.brand
+            card.brand,
+            merchantId,
+            stripeAccountId
           );
           
           console.log('✅ Customer restored to local DB');
@@ -747,12 +761,14 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
     // Get card details
     const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId, createOptions);
     
-    // Save customer to database
+    // Save customer to database with merchantId and stripeAccountId
     db.createOrUpdateCustomer(
       phone,
       stripeCustomer.id,
       paymentMethod.card.last4,
-      paymentMethod.card.brand
+      paymentMethod.card.brand,
+      merchantId,
+      stripeAccountId
     );
     
     // Mark session as completed
@@ -798,8 +814,8 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
     
     const createOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
     
-    // Get customer from database
-    const customer = db.getCustomerByPhone(phone);
+    // Get customer from database with merchantId
+    const customer = db.getCustomerByPhone(phone, merchantId);
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
     }

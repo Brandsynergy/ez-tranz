@@ -234,24 +234,28 @@ function getTransactionStats(merchantId) {
 // CUSTOMERS (for saved payment methods)
 // ==========================================
 
-function createOrUpdateCustomer(phoneNumber, stripeCustomerId, last4, cardBrand) {
+function createOrUpdateCustomer(phoneNumber, stripeCustomerId, last4, cardBrand, merchantId = null, stripeAccountId = null) {
     const customerId = generateId();
+    const customerKey = merchantId ? `${merchantId}_${phoneNumber}` : phoneNumber;
     const customer = {
         id: customerId,
         phoneNumber,
         stripeCustomerId,
+        merchantId: merchantId || null,
+        stripeAccountId: stripeAccountId || null, // Which Stripe account this customer belongs to
         last4, // Last 4 digits of card
         cardBrand, // visa, mastercard, etc
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
     
-    customers.set(phoneNumber, customer);
+    customers.set(customerKey, customer);
     return customer;
 }
 
-function getCustomerByPhone(phoneNumber) {
-    return customers.get(phoneNumber) || null;
+function getCustomerByPhone(phoneNumber, merchantId = null) {
+    const customerKey = merchantId ? `${merchantId}_${phoneNumber}` : phoneNumber;
+    return customers.get(customerKey) || null;
 }
 
 // ==========================================

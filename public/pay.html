@@ -213,8 +213,12 @@
             document.getElementById('phone-btn').textContent = 'Checking...';
             
             try {
-                // Check if customer exists
-                const response = await fetch(`/api/customer/check?phone=${encodeURIComponent(phone)}`);
+                // Check if customer exists (include merchantId if available)
+                let checkUrl = `/api/customer/check?phone=${encodeURIComponent(phone)}`;
+                if (merchantId) {
+                    checkUrl += `&merchantId=${merchantId}`;
+                }
+                const response = await fetch(checkUrl);
                 const data = await response.json();
                 
                 if (data.exists) {
