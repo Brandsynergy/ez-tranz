@@ -729,27 +729,45 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       }
     }
     
-    // Create Stripe customer (on connected account if available)
     const createOptions = stripeAccountId ? { stripeAccount: stripeAccountId } : {};
+    
+    // Create Stripe customer first (on connected account if available)
     const stripeCustomer = await stripe.customers.create({
       phone,
-      payment_method: paymentMethodId,
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
     }, createOptions);
     
-    // Attach payment method to customer
-    await stripe.paymentMethods.attach(paymentMethodId, {
-      customer: stripeCustomer.id,
-    }, createOptions);
+    console.log(`✅ Customer created: ${stripeCustomer.id}`);
     
-    // Create payment intent with manual card confirmation only
+    // Clone payment method to connected account by creating a payment intent with it
+    // This automatically clones the payment method to the connected account
+    let actualPaymentMethodId = paymentMethodId;
+    if (stripeAccountId) {
+      console.log('🔄 Cloning payment method via setup intent...');
+      // Create a setup intent to clone the payment method
+      const setupIntent = await stripe.setupIntents.create({
+        customer: stripeCustomer.id,
+        payment_method: paymentMethodId,
+        confirm: true,
+        payment_method_types: ['card'],
+      }, createOptions);
+      
+      // The cloned payment method is now attached to the customer on the connected account
+      actualPaymentMethodId = setupIntent.payment_method;
+      console.log(`✅ Payment method cloned to connected account: ${actualPaymentMethodId}`);
+    } else {
+      // Platform account - just attach normally
+      await stripe.paymentMethods.attach(paymentMethodId, {
+        customer: stripeCustomer.id,
+      });
+      console.log(`✅ Payment method attached`);
+    }
+    
+    // Create payment intent with the CLONED payment method
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100),
       currency: currency || 'usd',
       customer: stripeCustomer.id,
-      payment_method: paymentMethodId,
+      payment_method: actualPaymentMethodId,  // Use cloned PM, not original
       confirm: true,
       setup_future_usage: 'off_session',
       automatic_payment_methods: {
@@ -758,8 +776,8 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       }
     }, createOptions);
     
-    // Get card details
-    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId, createOptions);
+    // Get card details from the actual payment method used
+    const paymentMethod = await stripe.paymentMethods.retrieve(actualPaymentMethodId, createOptions);
     
     // Save customer to database with merchantId and stripeAccountId
     db.createOrUpdateCustomer(
