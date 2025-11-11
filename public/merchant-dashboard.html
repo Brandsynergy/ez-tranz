@@ -698,8 +698,9 @@
                 
                 // Show currency breakdown
                 const breakdown = stats.currencyBreakdown;
+                const breakdownContainer = document.getElementById('currency-breakdown-container');
                 if (Object.keys(breakdown).length > 0) {
-                    document.getElementById('currency-breakdown-container').style.display = 'block';
+                    breakdownContainer.style.display = 'block';
                     document.getElementById('currency-breakdown').innerHTML = Object.keys(breakdown).map(curr => {
                         const symbol = currencySymbols[curr] || curr + ' ';
                         return `
@@ -710,6 +711,9 @@
                             </div>
                         `;
                     }).join('');
+                } else {
+                    // Hide breakdown when no transactions
+                    breakdownContainer.style.display = 'none';
                 }
             } catch (error) {
                 console.error('Error loading stats:', error);
