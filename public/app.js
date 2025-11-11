@@ -170,11 +170,14 @@ chargeBtn.addEventListener('click', async () => {
         // Get selected currency
         const currency = currencySelect.value;
         
+        // Get merchantId from branding if available
+        const merchantId = BRANDING?.merchantId || null;
+        
         // Create payment session
         const response = await fetch('/create-payment-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount, currency })
+            body: JSON.stringify({ amount, currency, merchantId })
         });
 
         if (!response.ok) {
@@ -204,7 +207,10 @@ chargeBtn.addEventListener('click', async () => {
         currentSessionId = sessionId;
 
         // Create URL for our custom payment page
-        const customPaymentUrl = `${window.location.origin}/pay.html?session_id=${sessionId}&amount=${amount}&currency=${currency}`;
+        let customPaymentUrl = `${window.location.origin}/pay.html?session_id=${sessionId}&amount=${amount}&currency=${currency}`;
+        if (merchantId) {
+            customPaymentUrl += `&merchant_id=${merchantId}`;
+        }
 
         // Clear previous QR code
         const qrcodeDiv = document.getElementById('qrcode');

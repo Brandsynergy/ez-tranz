@@ -185,7 +185,7 @@ app.post('/create-payment-session',
   dailyLimitChecker,     // Check daily limit
   async (req, res) => {
   try {
-    const { amount, currency = 'usd' } = req.body;
+    const { amount, currency = 'usd', merchantId } = req.body;
 
     console.log('✅ Creating payment session for amount:', amount, currency);
 
@@ -198,6 +198,7 @@ app.post('/create-payment-session',
     paymentSessions.set(sessionId, {
       amount,
       currency,
+      merchantId: merchantId || null,
       status: 'pending',
       created: Date.now(),
       ip: req.ip || req.connection.remoteAddress,
@@ -210,9 +211,13 @@ app.post('/create-payment-session',
     console.log(`📊 Daily total for ${req.dailyLimitKey}: $${(currentTotal + parseFloat(amount)).toFixed(2)}`);
 
     // Return session ID - frontend will create payment URL
+    const paymentUrl = merchantId 
+      ? `/pay.html?session_id=${sessionId}&amount=${amount}&currency=${currency}&merchant_id=${merchantId}`
+      : `/pay.html?session_id=${sessionId}&amount=${amount}&currency=${currency}`;
+    
     res.json({
       sessionId: sessionId,
-      paymentUrl: `/pay.html?session_id=${sessionId}&amount=${amount}&currency=${currency}`,
+      paymentUrl: paymentUrl,
     });
   } catch (error) {
     console.error('Error creating payment session:', error);
@@ -740,7 +745,7 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
     }, createOptions);
     
     // Get card details
-    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId, createOptions);
     
     // Save customer to database
     db.createOrUpdateCustomer(

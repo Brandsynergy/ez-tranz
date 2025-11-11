@@ -179,6 +179,7 @@
         const sessionId = params.get('session_id');
         const amount = params.get('amount');
         const currency = params.get('currency') || 'usd';
+        const merchantId = params.get('merchant_id') || null;
         
         if (!sessionId || !amount) {
             alert('Invalid payment link');
@@ -283,7 +284,8 @@
                         paymentMethodId: paymentMethod.id,
                         sessionId,
                         amount,
-                        currency
+                        currency,
+                        merchantId
                     })
                 });
                 
@@ -323,7 +325,8 @@
                         phone,
                         sessionId,
                         amount,
-                        currency
+                        currency,
+                        merchantId
                     })
                 });
                 
