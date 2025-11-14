@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { Resend } = require('resend');
 
 // Validate Stripe key
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -10,6 +11,9 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Initialize Resend for email sending
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -949,7 +953,7 @@ app.get('/api/merchant/receipt/:transactionId', requireAuth, (req, res) => {
   }
 });
 
-// Send receipt via email (placeholder - would integrate with email service)
+// Send receipt via email
 app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, res) => {
   try {
     const { transactionId } = req.params;
@@ -967,19 +971,49 @@ app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, r
     
     const merchantSettings = db.getMerchantSettings(req.merchantId);
     
-    // In production, this would integrate with SendGrid, AWS SES, etc.
-    console.log(`📧 Would send receipt for transaction ${transactionId} to ${email}`);
-    console.log(`Receipt for ${merchantSettings.businessName} - $${transaction.amount} ${transaction.currency}`);
+    // Check if Resend is configured
+    if (!resend || !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_YourResendAPIKeyHere') {
+      console.log(`📧 Email not configured - Would send receipt for transaction ${transactionId} to ${email}`);
+      console.log(`Receipt for ${merchantSettings.businessName} - $${transaction.amount} ${transaction.currency}`);
+      
+      return res.json({ 
+        success: true, 
+        message: `Receipt preview ready (email not configured yet)`,
+        note: 'To enable email sending: Sign up at resend.com and add RESEND_API_KEY to your environment variables'
+      });
+    }
     
-    // For now, just return success
+    // Generate receipt HTML
+    const receiptHtml = generateReceiptHtml(transaction, merchantSettings);
+    
+    // Send email via Resend
+    const fromEmail = process.env.RECEIPT_FROM_EMAIL || 'receipts@eztranz.com';
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: email,
+      subject: `Payment Receipt from ${merchantSettings.businessName || 'EZ TRANZ'}`,
+      html: receiptHtml
+    });
+    
+    console.log(`✅ Receipt sent successfully to ${email} - Email ID: ${result.id}`);
+    
     res.json({ 
       success: true, 
       message: `Receipt sent to ${email}`,
-      note: 'Email integration pending - receipt data logged to console'
+      emailId: result.id
     });
   } catch (error) {
-    console.error('Error sending receipt:', error);
-    res.status(500).json({ error: 'Failed to send receipt' });
+    console.error('❌ Error sending receipt:', error);
+    
+    // Provide helpful error messages
+    let errorMessage = 'Failed to send receipt';
+    if (error.message && error.message.includes('API key')) {
+      errorMessage = 'Email service not configured correctly. Please check your RESEND_API_KEY.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    res.status(500).json({ error: errorMessage });
   }
 });
 
