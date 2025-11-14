@@ -1031,7 +1031,8 @@ function generateReceiptHtml(transaction, merchantSettings) {
   let locationHtml = '';
   if (transaction.location && transaction.location.latitude && transaction.location.longitude) {
     const { latitude, longitude } = transaction.location;
-    const mapUrl = `https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${latitude},${longitude}&zoom=15`;
+    const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY || 'YOUR_GOOGLE_MAPS_API_KEY';
+    const mapUrl = `https://www.google.com/maps/embed/v1/place?key=${googleMapsKey}&q=${latitude},${longitude}&zoom=15`;
     const linkUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
     
     locationHtml = `
