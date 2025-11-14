@@ -792,8 +792,10 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
         status: 'completed',
         paymentIntentId: paymentIntent.id,
         customerPhone: phone,
+        customerEmail: req.body.customerEmail || null,
         last4: paymentMethod.card.last4,
-        cardBrand: paymentMethod.card.brand
+        cardBrand: paymentMethod.card.brand,
+        location: req.body.location || null
       });
       console.log('✅ Transaction saved to database');
     }
@@ -889,8 +891,10 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
         status: 'completed',
         paymentIntentId: paymentIntent.id,
         customerPhone: phone,
+        customerEmail: req.body.customerEmail || null,
         last4: paymentMethod.card.last4,
-        cardBrand: paymentMethod.card.brand
+        cardBrand: paymentMethod.card.brand,
+        location: req.body.location || null
       });
       console.log('✅ Transaction saved to database');
     }
@@ -914,6 +918,287 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
     res.status(400).json({ error: error.message || 'Payment failed' });
   }
 });
+
+// ==========================================
+// RECEIPT ENDPOINTS
+// ==========================================
+
+// Get receipt data for a transaction
+app.get('/api/merchant/receipt/:transactionId', requireAuth, (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    const transaction = db.getTransactionById(req.merchantId, transactionId);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    
+    const merchantSettings = db.getMerchantSettings(req.merchantId);
+    
+    // Generate receipt HTML
+    const receiptHtml = generateReceiptHtml(transaction, merchantSettings);
+    
+    res.json({
+      transaction,
+      merchantSettings,
+      receiptHtml
+    });
+  } catch (error) {
+    console.error('Error fetching receipt:', error);
+    res.status(500).json({ error: 'Failed to fetch receipt' });
+  }
+});
+
+// Send receipt via email (placeholder - would integrate with email service)
+app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email address required' });
+    }
+    
+    const transaction = db.getTransactionById(req.merchantId, transactionId);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    
+    const merchantSettings = db.getMerchantSettings(req.merchantId);
+    
+    // In production, this would integrate with SendGrid, AWS SES, etc.
+    console.log(`📧 Would send receipt for transaction ${transactionId} to ${email}`);
+    console.log(`Receipt for ${merchantSettings.businessName} - $${transaction.amount} ${transaction.currency}`);
+    
+    // For now, just return success
+    res.json({ 
+      success: true, 
+      message: `Receipt sent to ${email}`,
+      note: 'Email integration pending - receipt data logged to console'
+    });
+  } catch (error) {
+    console.error('Error sending receipt:', error);
+    res.status(500).json({ error: 'Failed to send receipt' });
+  }
+});
+
+// Generate receipt HTML
+function generateReceiptHtml(transaction, merchantSettings) {
+  const currencySymbols = {
+    USD: '$', EUR: '€', GBP: '£', NGN: '₦', INR: '₹', 
+    JPY: '¥', CAD: 'C$', AUD: 'A$', BRL: 'R$', ZAR: 'R'
+  };
+  const symbol = currencySymbols[transaction.currency] || transaction.currency + ' ';
+  
+  const date = new Date(transaction.createdAt).toLocaleString();
+  
+  // Location map embed
+  let locationHtml = '';
+  if (transaction.location && transaction.location.latitude && transaction.location.longitude) {
+    const { latitude, longitude } = transaction.location;
+    const mapUrl = `https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${latitude},${longitude}&zoom=15`;
+    const linkUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    
+    locationHtml = `
+      <div style="margin-top: 24px; padding-top: 24px; border-top: 2px dashed #e5e7eb;">
+        <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">📍 Transaction Location</h3>
+        <div style="border-radius: 12px; overflow: hidden; margin-bottom: 12px; border: 2px solid #e5e7eb;">
+          <iframe 
+            width="100%" 
+            height="200" 
+            frameborder="0" 
+            style="border:0; display: block;" 
+            src="${mapUrl}" 
+            allowfullscreen>
+          </iframe>
+        </div>
+        <p style="font-size: 12px; color: #6b7280; text-align: center;">
+          <a href="${linkUrl}" target="_blank" style="color: #6366f1; text-decoration: none;">View on Google Maps</a>
+        </p>
+      </div>
+    `;
+  }
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Receipt - ${merchantSettings.businessName}</title>
+      <style>
+        @media print {
+          body { margin: 0; padding: 20px; }
+          .no-print { display: none; }
+        }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 40px 20px;
+          background: #f9fafb;
+        }
+        .receipt {
+          background: white;
+          padding: 40px;
+          border-radius: 16px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .logo {
+          text-align: center;
+          margin-bottom: 24px;
+        }
+        .logo img {
+          max-width: 200px;
+          max-height: 80px;
+          border-radius: 8px;
+        }
+        .business-name {
+          font-size: 24px;
+          font-weight: 700;
+          text-align: center;
+          color: #1f2937;
+          margin-bottom: 8px;
+        }
+        .business-info {
+          text-align: center;
+          font-size: 14px;
+          color: #6b7280;
+          margin-bottom: 32px;
+        }
+        .receipt-title {
+          font-size: 18px;
+          font-weight: 600;
+          text-align: center;
+          color: #374151;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 2px solid #e5e7eb;
+        }
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 12px 0;
+          border-bottom: 1px solid #f3f4f6;
+        }
+        .detail-label {
+          font-size: 14px;
+          color: #6b7280;
+        }
+        .detail-value {
+          font-size: 14px;
+          color: #1f2937;
+          font-weight: 600;
+        }
+        .amount-row {
+          margin-top: 16px;
+          padding: 16px;
+          background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%);
+          border-radius: 12px;
+        }
+        .amount-row .detail-label,
+        .amount-row .detail-value {
+          color: white;
+          font-size: 18px;
+          font-weight: 700;
+        }
+        .footer {
+          margin-top: 32px;
+          padding-top: 24px;
+          border-top: 2px dashed #e5e7eb;
+          text-align: center;
+          font-size: 14px;
+          color: #6b7280;
+          line-height: 1.6;
+        }
+        .actions {
+          margin-top: 32px;
+          text-align: center;
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+        }
+        .btn {
+          padding: 12px 24px;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-primary {
+          background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%);
+          color: white;
+        }
+        .btn-secondary {
+          background: white;
+          color: #374151;
+          border: 2px solid #e5e7eb;
+        }
+        .btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt">
+        ${merchantSettings.logoUrl ? `<div class="logo"><img src="${merchantSettings.logoUrl}" alt="${merchantSettings.businessName}"></div>` : ''}
+        <div class="business-name">${merchantSettings.businessName || 'EZ TRANZ'}</div>
+        <div class="business-info">
+          ${merchantSettings.address ? merchantSettings.address + '<br>' : ''}
+          ${merchantSettings.phone ? merchantSettings.phone + '<br>' : ''}
+          ${merchantSettings.businessEmail || ''}
+        </div>
+        
+        <div class="receipt-title">PAYMENT RECEIPT</div>
+        
+        <div class="detail-row">
+          <span class="detail-label">Date & Time</span>
+          <span class="detail-value">${date}</span>
+        </div>
+        
+        <div class="detail-row">
+          <span class="detail-label">Transaction ID</span>
+          <span class="detail-value">${transaction.id}</span>
+        </div>
+        
+        ${transaction.customerPhone ? `
+        <div class="detail-row">
+          <span class="detail-label">Customer Phone</span>
+          <span class="detail-value">${transaction.customerPhone}</span>
+        </div>
+        ` : ''}
+        
+        ${transaction.last4 ? `
+        <div class="detail-row">
+          <span class="detail-label">Payment Method</span>
+          <span class="detail-value">${transaction.cardBrand || 'Card'} •••• ${transaction.last4}</span>
+        </div>
+        ` : ''}
+        
+        <div class="amount-row detail-row">
+          <span class="detail-label">Amount Paid</span>
+          <span class="detail-value">${symbol}${transaction.amount.toFixed(2)}</span>
+        </div>
+        
+        ${locationHtml}
+        
+        <div class="footer">
+          ${merchantSettings.receiptFooter || 'Thank you for your business!'}
+        </div>
+      </div>
+      
+      <div class="actions no-print">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print Receipt</button>
+        <button class="btn btn-secondary" onclick="window.close()">Close</button>
+      </div>
+    </body>
+    </html>
+  `;
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {

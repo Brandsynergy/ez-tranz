@@ -95,6 +95,14 @@
         .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
         .badge-success { background: #d1fae5; color: #065f46; }
         
+        /* Receipt Action Buttons */
+        .receipt-actions { display: flex; gap: 8px; }
+        .btn-icon { padding: 8px 12px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-print { background: #6366f1; color: white; }
+        .btn-print:hover { background: #4f46e5; }
+        .btn-send { background: #10b981; color: white; }
+        .btn-send:hover { background: #059669; }
+        
         /* Bank Account Cards */
         .bank-accounts-grid {
             display: grid;
@@ -615,10 +623,11 @@
                                 <th>Currency</th>
                                 <th>Status</th>
                                 <th>Transaction ID</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="transactions-tbody">
-                            <tr><td colspan="5" style="text-align: center; padding: 40px; color: #9ca3af;">Loading transactions...</td></tr>
+                            <tr><td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">Loading transactions...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -755,7 +764,7 @@
                 
                 const tbody = document.getElementById('transactions-tbody');
                 if (data.transactions.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #9ca3af;">No transactions yet</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #9ca3af;">No transactions yet</td></tr>';
                     return;
                 }
                 
@@ -766,6 +775,12 @@
                         <td>${txn.currency}</td>
                         <td><span class="badge badge-success">${txn.status || 'Completed'}</span></td>
                         <td style="font-family: monospace; font-size: 12px;">${(txn.paymentIntentId || txn.id).substring(0, 20)}...</td>
+                        <td>
+                            <div class="receipt-actions">
+                                <button class="btn-icon btn-print" onclick="printReceipt('${txn.id}')" title="Print Receipt">🖨️ Print</button>
+                                <button class="btn-icon btn-send" onclick="sendReceipt('${txn.id}')" title="Send Receipt">📧 Send</button>
+                            </div>
+                        </td>
                     </tr>
                 `).join('');
             } catch (error) {
@@ -1261,6 +1276,63 @@
             await fetch('/api/merchant/logout', { method: 'POST' });
             window.location.href = '/merchant-login.html';
         });
+        
+        // Receipt Functions
+        async function printReceipt(transactionId) {
+            try {
+                const response = await fetch(`/api/merchant/receipt/${transactionId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch receipt');
+                }
+                
+                const data = await response.json();
+                
+                // Open receipt in new window for printing
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                printWindow.document.write(data.receiptHtml);
+                printWindow.document.close();
+                
+                // Auto-trigger print dialog after content loads
+                printWindow.onload = () => {
+                    setTimeout(() => {
+                        printWindow.print();
+                    }, 250);
+                };
+            } catch (error) {
+                console.error('Error printing receipt:', error);
+                alert('❌ Failed to print receipt: ' + error.message);
+            }
+        }
+        
+        async function sendReceipt(transactionId) {
+            const email = prompt('📧 Enter customer email address to send receipt:');
+            if (!email) return;
+            
+            // Basic email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('❌ Please enter a valid email address');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/merchant/receipt/${transactionId}/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to send receipt');
+                }
+                
+                const data = await response.json();
+                alert(`✅ ${data.message}\n\n🚧 ${data.note || ''}`);
+            } catch (error) {
+                console.error('Error sending receipt:', error);
+                alert('❌ Failed to send receipt: ' + error.message);
+            }
+        }
         
         // Initialize on page load
         init();

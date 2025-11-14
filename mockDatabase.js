@@ -235,6 +235,11 @@ function clearMerchantTransactions(merchantId) {
     console.log(`🗑️ Cleared ${merchantId}'s transaction history`);
 }
 
+function getTransactionById(merchantId, transactionId) {
+    const merchantTxns = transactions.get(merchantId) || [];
+    return merchantTxns.find(txn => txn.id === transactionId) || null;
+}
+
 // ==========================================
 // CUSTOMERS (for saved payment methods)
 // ==========================================
@@ -447,6 +452,7 @@ module.exports = {
     getMerchantTransactions,
     getTransactionStats,
     clearMerchantTransactions,
+    getTransactionById,
     
     // Merchant
     getMerchantById,

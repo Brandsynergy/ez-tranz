@@ -213,6 +213,27 @@
         const elements = stripe.elements();
         let cardElement = null;
         let currentCustomer = null;
+        let userLocation = null;
+        
+        // Capture GPS location on page load (optional/best-effort)
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: new Date().toISOString()
+                    };
+                    console.log('📍 Location captured:', userLocation);
+                },
+                (error) => {
+                    console.log('📍 Location not available:', error.message);
+                    // Don't block payment if location fails
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
         
         // Load and apply merchant branding
         async function loadMerchantBranding(merchantId) {
@@ -350,7 +371,8 @@
                         sessionId,
                         amount,
                         currency,
-                        merchantId
+                        merchantId,
+                        location: userLocation
                     })
                 });
                 
@@ -391,7 +413,8 @@
                         sessionId,
                         amount,
                         currency,
-                        merchantId
+                        merchantId,
+                        location: userLocation
                     })
                 });
                 
