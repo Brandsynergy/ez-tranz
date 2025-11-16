@@ -238,24 +238,9 @@
                 return;
             }
             
-            // Check permission status
-            const permissionStatus = await checkLocationPermission();
-            console.log('📍 Initial permission status:', permissionStatus);
-            
-            if (permissionStatus === 'denied') {
-                notice.style.background = '#fee2e2';
-                notice.style.borderColor = '#dc2626';
-                notice.style.color = '#7f1d1d';
-                notice.innerHTML = '❌ <strong>LOCATION BLOCKED IN BROWSER</strong><br><span style="font-size: 14px;">Tap address bar → Site Settings → Permissions → Location → Allow</span>';
-            } else if (permissionStatus === 'granted') {
-                notice.style.background = '#d1fae5';
-                notice.style.borderColor = '#10b981';
-                notice.style.color = '#065f46';
-                notice.innerHTML = '✅ <strong>LOCATION ACCESS GRANTED</strong><br><span style="font-size: 14px;">Ready to capture transaction location for security.</span>';
-            } else {
-                // 'prompt' - will ask when user clicks Continue
-                notice.innerHTML = '🔒 <strong style="font-size: 17px;">LOCATION REQUIRED FOR SECURITY</strong><br><span style="font-size: 14px; display: block; margin-top: 8px;">This payment requires your GPS location to prevent fraud.<br><strong>When you click Continue, tap "Allow" on the browser prompt.</strong></span>';
-            }
+            // On iOS Safari, don't check permission async - it breaks the gesture chain
+            // Just show the instruction
+            notice.innerHTML = '🔒 <strong style="font-size: 17px;">LOCATION REQUIRED FOR SECURITY</strong><br><span style="font-size: 14px; display: block; margin-top: 8px;">This payment requires your GPS location to prevent fraud.<br><br><strong>iOS Safari Users:</strong> If location doesn\'t work, tap the <strong>"aA"</strong> icon in address bar → Website Settings → Location → Allow</span>';
         }
         
         // Check location permission status
@@ -277,7 +262,7 @@
         
         // Function to request GPS location with user feedback
         function requestLocation() {
-            return new Promise(async (resolve, reject) => {
+            return new Promise((resolve, reject) => {
                 if (locationRequested && userLocation) {
                     console.log('📍 Location already captured, returning cached:', userLocation);
                     resolve(userLocation);
@@ -303,35 +288,18 @@
                 console.log('📍 Browser:', navigator.userAgent);
                 console.log('📍 HTTPS:', window.location.protocol === 'https:');
                 
-                // Check permission first
-                const permissionState = await checkLocationPermission();
-                console.log('📍 Permission state:', permissionState);
-                
-                if (permissionState === 'denied') {
-                    console.log('❌ Location permission DENIED');
-                    const notice = document.getElementById('location-notice');
-                    if (notice) {
-                        notice.style.background = '#fee2e2';
-                        notice.style.borderColor = '#dc2626';
-                        notice.style.color = '#7f1d1d';
-                        notice.innerHTML = '❌ <strong>LOCATION BLOCKED</strong><br><span style="font-size: 14px;">Go to your browser settings → Site Settings → Location → Allow for this site</span>';
-                    }
-                    reject(new Error('Location permission denied. Please enable location in your browser settings.'));
-                    return;
-                }
-                
-                // Add timeout (10 seconds for slower connections)
+                // Add timeout (15 seconds for iOS Safari)
                 const timeoutId = setTimeout(() => {
-                    console.log('❌ Location request TIMEOUT (10s)');
+                    console.log('❌ Location request TIMEOUT (15s)');
                     const notice = document.getElementById('location-notice');
                     if (notice) {
                         notice.style.background = '#fee2e2';
                         notice.style.borderColor = '#dc2626';
                         notice.style.color = '#7f1d1d';
-                        notice.innerHTML = '❌ <strong>LOCATION TIMEOUT</strong><br><span style="font-size: 14px;">Please check: Is Location Services ON in your phone Settings? Try again.</span>';
+                        notice.innerHTML = '❌ <strong>LOCATION TIMEOUT</strong><br><span style="font-size: 14px;"><strong>iOS Safari Fix:</strong> Go to Settings → Safari → Location → "Ask" or "Allow". Then tap address bar → Website Settings → Location → Allow.</span>';
                     }
-                    reject(new Error('Location request timed out. Please enable Location Services on your device.'));
-                }, 10000); // 10 second timeout
+                    reject(new Error('Location timed out. On iOS: Settings → Safari → Location → Allow'));
+                }, 15000); // 15 second timeout
                 
                 // Request location
                 console.log('📍 Calling getCurrentPosition...');
@@ -383,7 +351,7 @@
                     },
                     { 
                         enableHighAccuracy: true, // High accuracy for fraud prevention
-                        timeout: 10000, // 10 seconds
+                        timeout: 15000, // 15 seconds for iOS
                         maximumAge: 0 // Always get fresh location
                     }
                 );
