@@ -120,13 +120,8 @@
         
         <!-- Step 1: Phone Number -->
         <div id="step-phone" class="step active">
-            <div class="info-box" style="background: #fef3c7; border-color: #f59e0b; color: #78350f; font-size: 15px; line-height: 1.6;" id="location-notice">
-                📍 <strong style="font-size: 17px;">LOCATION REQUIRED:</strong><br>
-                <span style="font-size: 14px; display: block; margin-top: 8px;">
-                ⚠️ Turn ON Location Services in phone settings<br>
-                ⚠️ Allow location when browser asks<br>
-                <small style="opacity: 0.8;">If stuck, check browser console for errors</small>
-                </span>
+            <div class="info-box" style="background: #e0f2fe; border-color: #0ea5e9; color: #075985; font-size: 14px; line-height: 1.6;" id="location-notice">
+                📍 <strong>Optional Security Feature:</strong> We'll try to capture your location for fraud protection. If unavailable, payment will proceed normally.
             </div>
             <div class="form-group">
                 <label class="form-label">Phone Number</label>
@@ -243,19 +238,19 @@
                 console.log('📍 Browser:', navigator.userAgent);
                 console.log('📍 HTTPS:', window.location.protocol === 'https:');
                 
-                // Add our own timeout (5 seconds)
+                // Add our own timeout (3 seconds)
                 const timeoutId = setTimeout(() => {
-                    console.log('⚠️⚠️⚠️ LOCATION TIMEOUT (5s) - No response from browser');
+                    console.log('📍 Location timeout (3s) - Continuing without location');
                     const notice = document.getElementById('location-notice');
                     if (notice) {
-                        notice.style.background = '#fee2e2';
-                        notice.style.borderColor = '#ef4444';
-                        notice.style.color = '#7f1d1d';
-                        notice.innerHTML = '⚠️ Location timed out. Continuing without location...';
+                        notice.style.background = '#f3f4f6';
+                        notice.style.borderColor = '#9ca3af';
+                        notice.style.color = '#4b5563';
+                        notice.innerHTML = '📍 Location unavailable - Payment proceeding...';
                     }
                     console.log('📍 Resolving with NULL due to timeout');
                     resolve(null);
-                }, 5000); // 5 second timeout
+                }, 3000); // 3 second timeout
                 
                 // Request location
                 console.log('📍 Calling getCurrentPosition...');
@@ -284,24 +279,24 @@
                     },
                     (error) => {
                         clearTimeout(timeoutId);
-                        console.log('❌❌❌ Location ERROR:', error.message, 'Code:', error.code);
-                        console.log('❌ Error details:', error);
+                        console.log('📍 Location not available:', error.message, 'Code:', error.code);
+                        console.log('📍 Error details:', error);
                         
-                        // Update UI to show location failed
+                        // Update UI to show location failed (not alarming)
                         const notice = document.getElementById('location-notice');
                         if (notice) {
-                            notice.style.background = '#fee2e2';
-                            notice.style.borderColor = '#ef4444';
-                            notice.style.color = '#7f1d1d';
-                            notice.innerHTML = '⚠️ Location unavailable. Continuing without location...';
+                            notice.style.background = '#f3f4f6';
+                            notice.style.borderColor = '#9ca3af';
+                            notice.style.color = '#4b5563';
+                            notice.innerHTML = '📍 Location unavailable - Payment proceeding...';
                         }
                         
                         resolve(null);
                     },
                     { 
-                        enableHighAccuracy: false, // Changed to false for faster response
-                        timeout: 5000, // Reduced to 5 seconds
-                        maximumAge: 60000 // Allow cached location up to 1 minute old
+                        enableHighAccuracy: false, // Fast response
+                        timeout: 3000, // 3 seconds
+                        maximumAge: 60000 // Allow cached location
                     }
                 );
             });
