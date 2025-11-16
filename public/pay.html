@@ -121,7 +121,7 @@
         <!-- Step 1: Phone Number -->
         <div id="step-phone" class="step active">
             <div class="info-box" style="background: #fef3c7; border-color: #f59e0b; color: #78350f;" id="location-notice">
-                📍 <strong>Security Feature:</strong> We'll request your location to verify where this transaction occurs. This helps protect you from fraud!
+                📍 <strong>Security Feature:</strong> When you click Continue, we'll request your location to verify where this transaction occurs. This helps protect you from fraud!
             </div>
             <div class="form-group">
                 <label class="form-label">Phone Number</label>
@@ -286,10 +286,9 @@
             });
         }
         
-        // Request location when page loads
-        setTimeout(() => {
-            requestLocation();
-        }, 1000); // Wait 1 second after page loads
+        // Note: Location will be requested when user clicks Continue button
+        // This is required by mobile browsers (especially iOS) which block
+        // geolocation requests unless triggered by direct user interaction
         
         // Load and apply merchant branding
         async function loadMerchantBranding(merchantId) {
@@ -348,6 +347,11 @@
             
             errorDiv.classList.remove('show');
             document.getElementById('phone-btn').disabled = true;
+            
+            // Request location FIRST (triggered by user click - required for mobile browsers)
+            document.getElementById('phone-btn').textContent = 'Requesting location...';
+            await requestLocation();
+            
             document.getElementById('phone-btn').textContent = 'Checking...';
             
             try {

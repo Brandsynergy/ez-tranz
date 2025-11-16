@@ -790,6 +790,12 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
     
     // Save transaction to database
     if (merchantId) {
+      const hasLocation = req.body.location && req.body.location.latitude && req.body.location.longitude;
+      console.log(`📍 Location data received: ${hasLocation ? 'YES' : 'NO'}`);
+      if (hasLocation) {
+        console.log(`📍 GPS: ${req.body.location.latitude}, ${req.body.location.longitude}`);
+      }
+      
       db.createTransaction(merchantId, {
         amount: parseFloat(amount),
         currency: (currency || 'usd').toUpperCase(),
@@ -889,6 +895,12 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
     
     // Save transaction to database
     if (merchantId) {
+      const hasLocation = req.body.location && req.body.location.latitude && req.body.location.longitude;
+      console.log(`📍 Location data received: ${hasLocation ? 'YES' : 'NO'}`);
+      if (hasLocation) {
+        console.log(`📍 GPS: ${req.body.location.latitude}, ${req.body.location.longitude}`);
+      }
+      
       db.createTransaction(merchantId, {
         amount: parseFloat(amount),
         currency: (currency || 'usd').toUpperCase(),
