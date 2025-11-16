@@ -1245,6 +1245,28 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Diagnostic endpoint to check configuration (only for authenticated merchants)
+app.get('/api/merchant/diagnostics', requireAuth, (req, res) => {
+  res.json({
+    features: {
+      email: {
+        configured: !!resend && !!process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_YourResendAPIKeyHere',
+        hasApiKey: !!process.env.RESEND_API_KEY,
+        fromEmail: process.env.RECEIPT_FROM_EMAIL || 'receipts@eztranz.com'
+      },
+      googleMaps: {
+        configured: !!process.env.GOOGLE_MAPS_API_KEY && process.env.GOOGLE_MAPS_API_KEY !== 'your_google_maps_api_key_here' && process.env.GOOGLE_MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY',
+        hasApiKey: !!process.env.GOOGLE_MAPS_API_KEY
+      },
+      gpsLocation: {
+        enabled: true,
+        captureMethod: 'Browser Geolocation API'
+      }
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Serve static files AFTER API routes
 app.use(express.static('public'));
 

@@ -1334,8 +1334,42 @@
             }
         }
         
+        // Check system diagnostics
+        async function checkDiagnostics() {
+            try {
+                const response = await fetch('/api/merchant/diagnostics');
+                const data = await response.json();
+                
+                console.log('🔍 System Diagnostics:', data);
+                
+                let message = '🔍 System Status:\n\n';
+                message += `📧 Email Service: ${data.features.email.configured ? '✅ Configured' : '❌ Not Configured'}\n`;
+                message += `   API Key Present: ${data.features.email.hasApiKey ? 'Yes' : 'No'}\n`;
+                message += `   From Email: ${data.features.email.fromEmail}\n\n`;
+                message += `🗺️ Google Maps: ${data.features.googleMaps.configured ? '✅ Configured' : '❌ Not Configured'}\n`;
+                message += `   API Key Present: ${data.features.googleMaps.hasApiKey ? 'Yes' : 'No'}\n\n`;
+                message += `📍 GPS Location: ${data.features.gpsLocation.enabled ? '✅ Enabled' : '❌ Disabled'}\n`;
+                
+                alert(message);
+            } catch (error) {
+                console.error('Error checking diagnostics:', error);
+                alert('❌ Could not load diagnostics. Check console for details.');
+            }
+        }
+        
+        // Add diagnostic button shortcut (press 'D' key)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'D' && e.shiftKey && e.ctrlKey) {
+                checkDiagnostics();
+            }
+        });
+        
         // Initialize on page load
         init();
+        
+        // Log environment check on load
+        console.log('🚀 EZ TRANZ Dashboard Loaded');
+        console.log('💡 Tip: Press Ctrl+Shift+D to check system diagnostics');
     </script>
 </body>
 </html>
