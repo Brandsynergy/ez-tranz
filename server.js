@@ -1085,8 +1085,11 @@ function generateReceiptHtml(transaction, merchantSettings) {
           margin-bottom: 24px;
         }
         .logo img {
-          max-width: 200px;
-          max-height: 80px;
+          max-width: 180px;
+          max-height: 60px;
+          width: auto;
+          height: auto;
+          object-fit: contain;
           border-radius: 8px;
         }
         .business-name {
@@ -1176,11 +1179,32 @@ function generateReceiptHtml(transaction, merchantSettings) {
           transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
+        .btn:active {
+          transform: translateY(0);
+        }
+        @media (max-width: 768px) {
+          body { padding: 20px 10px; }
+          .receipt { padding: 24px; }
+          .actions { flex-direction: column; }
+          .btn { width: 100%; padding: 16px; font-size: 16px; }
+        }
       </style>
+      <script>
+        function printReceipt() {
+          // Hide buttons before printing
+          document.querySelector('.actions').style.display = 'none';
+          // Trigger print
+          window.print();
+          // Show buttons again after print dialog closes
+          setTimeout(() => {
+            document.querySelector('.actions').style.display = 'flex';
+          }, 100);
+        }
+      </script>
     </head>
     <body>
       <div class="receipt">
-        ${merchantSettings.logoUrl ? `<div class="logo"><img src="${merchantSettings.logoUrl}" alt="${merchantSettings.businessName}"></div>` : ''}
+        ${merchantSettings.logoUrl ? `<div class="logo"><img src="${merchantSettings.logoUrl}" alt="${merchantSettings.businessName}" style="max-width: 180px; max-height: 60px; width: auto; height: auto; object-fit: contain;"></div>` : ''}
         <div class="business-name">${merchantSettings.businessName || 'EZ TRANZ'}</div>
         <div class="business-info">
           ${merchantSettings.address ? merchantSettings.address + '<br>' : ''}
