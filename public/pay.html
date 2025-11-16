@@ -120,8 +120,12 @@
         
         <!-- Step 1: Phone Number -->
         <div id="step-phone" class="step active">
-            <div class="info-box" style="background: #e0f2fe; border-color: #0ea5e9; color: #075985; font-size: 14px; line-height: 1.6;" id="location-notice">
-                📍 <strong>Optional Security Feature:</strong> We'll try to capture your location for fraud protection. If unavailable, payment will proceed normally.
+            <div class="info-box" style="background: #fef3c7; border-color: #f59e0b; color: #78350f; font-size: 15px; line-height: 1.6; font-weight: 500;" id="location-notice">
+                🔒 <strong style="font-size: 17px;">LOCATION REQUIRED FOR SECURITY</strong><br>
+                <span style="font-size: 14px; display: block; margin-top: 8px;">
+                This payment requires your GPS location to prevent fraud.<br>
+                <strong>You must allow location access to continue.</strong>
+                </span>
             </div>
             <div class="form-group">
                 <label class="form-label">Phone Number</label>
@@ -216,11 +220,28 @@
         let userLocation = null;
         let locationRequested = false;
         
+        // Check location permission status
+        async function checkLocationPermission() {
+            if (!navigator.permissions) {
+                console.log('⚠️ Permissions API not supported');
+                return 'prompt';
+            }
+            
+            try {
+                const result = await navigator.permissions.query({ name: 'geolocation' });
+                console.log('📍 Permission status:', result.state);
+                return result.state; // 'granted', 'denied', or 'prompt'
+            } catch (error) {
+                console.log('⚠️ Could not check permission:', error);
+                return 'prompt';
+            }
+        }
+        
         // Function to request GPS location with user feedback
         function requestLocation() {
-            return new Promise((resolve) => {
-                if (locationRequested) {
-                    console.log('📍 Location already requested, returning cached:', userLocation);
+            return new Promise(async (resolve, reject) => {
+                if (locationRequested && userLocation) {
+                    console.log('📍 Location already captured, returning cached:', userLocation);
                     resolve(userLocation);
                     return;
                 }
@@ -229,8 +250,14 @@
                 
                 if (!navigator.geolocation) {
                     console.log('❌ Geolocation NOT SUPPORTED by browser');
-                    alert('GPS not supported by your browser');
-                    resolve(null);
+                    const notice = document.getElementById('location-notice');
+                    if (notice) {
+                        notice.style.background = '#fee2e2';
+                        notice.style.borderColor = '#dc2626';
+                        notice.style.color = '#7f1d1d';
+                        notice.innerHTML = '❌ <strong>GPS NOT SUPPORTED</strong><br><span style="font-size: 14px;">Your browser does not support location services. Please use Chrome or Safari.</span>';
+                    }
+                    reject(new Error('Geolocation not supported by your browser'));
                     return;
                 }
                 
@@ -238,19 +265,35 @@
                 console.log('📍 Browser:', navigator.userAgent);
                 console.log('📍 HTTPS:', window.location.protocol === 'https:');
                 
-                // Add our own timeout (3 seconds)
-                const timeoutId = setTimeout(() => {
-                    console.log('📍 Location timeout (3s) - Continuing without location');
+                // Check permission first
+                const permissionState = await checkLocationPermission();
+                console.log('📍 Permission state:', permissionState);
+                
+                if (permissionState === 'denied') {
+                    console.log('❌ Location permission DENIED');
                     const notice = document.getElementById('location-notice');
                     if (notice) {
-                        notice.style.background = '#f3f4f6';
-                        notice.style.borderColor = '#9ca3af';
-                        notice.style.color = '#4b5563';
-                        notice.innerHTML = '📍 Location unavailable - Payment proceeding...';
+                        notice.style.background = '#fee2e2';
+                        notice.style.borderColor = '#dc2626';
+                        notice.style.color = '#7f1d1d';
+                        notice.innerHTML = '❌ <strong>LOCATION BLOCKED</strong><br><span style="font-size: 14px;">Go to your browser settings → Site Settings → Location → Allow for this site</span>';
                     }
-                    console.log('📍 Resolving with NULL due to timeout');
-                    resolve(null);
-                }, 3000); // 3 second timeout
+                    reject(new Error('Location permission denied. Please enable location in your browser settings.'));
+                    return;
+                }
+                
+                // Add timeout (10 seconds for slower connections)
+                const timeoutId = setTimeout(() => {
+                    console.log('❌ Location request TIMEOUT (10s)');
+                    const notice = document.getElementById('location-notice');
+                    if (notice) {
+                        notice.style.background = '#fee2e2';
+                        notice.style.borderColor = '#dc2626';
+                        notice.style.color = '#7f1d1d';
+                        notice.innerHTML = '❌ <strong>LOCATION TIMEOUT</strong><br><span style="font-size: 14px;">Please check: Is Location Services ON in your phone Settings? Try again.</span>';
+                    }
+                    reject(new Error('Location request timed out. Please enable Location Services on your device.'));
+                }, 10000); // 10 second timeout
                 
                 // Request location
                 console.log('📍 Calling getCurrentPosition...');
@@ -279,24 +322,31 @@
                     },
                     (error) => {
                         clearTimeout(timeoutId);
-                        console.log('📍 Location not available:', error.message, 'Code:', error.code);
-                        console.log('📍 Error details:', error);
+                        console.log('❌ Location ERROR:', error.message, 'Code:', error.code);
                         
-                        // Update UI to show location failed (not alarming)
                         const notice = document.getElementById('location-notice');
                         if (notice) {
-                            notice.style.background = '#f3f4f6';
-                            notice.style.borderColor = '#9ca3af';
-                            notice.style.color = '#4b5563';
-                            notice.innerHTML = '📍 Location unavailable - Payment proceeding...';
+                            notice.style.background = '#fee2e2';
+                            notice.style.borderColor = '#dc2626';
+                            notice.style.color = '#7f1d1d';
+                            
+                            if (error.code === 1) { // PERMISSION_DENIED
+                                notice.innerHTML = '❌ <strong>LOCATION ACCESS DENIED</strong><br><span style="font-size: 14px;">You must allow location access. Check browser address bar for permission prompt or go to Settings → Site Settings → Location.</span>';
+                            } else if (error.code === 2) { // POSITION_UNAVAILABLE
+                                notice.innerHTML = '❌ <strong>LOCATION UNAVAILABLE</strong><br><span style="font-size: 14px;">Cannot determine your location. Make sure Location Services is ON in your device settings.</span>';
+                            } else if (error.code === 3) { // TIMEOUT
+                                notice.innerHTML = '❌ <strong>LOCATION TIMEOUT</strong><br><span style="font-size: 14px;">Location request timed out. Make sure Location Services is ON and try again.</span>';
+                            } else {
+                                notice.innerHTML = '❌ <strong>LOCATION ERROR</strong><br><span style="font-size: 14px;">' + error.message + '</span>';
+                            }
                         }
                         
-                        resolve(null);
+                        reject(error);
                     },
                     { 
-                        enableHighAccuracy: false, // Fast response
-                        timeout: 3000, // 3 seconds
-                        maximumAge: 60000 // Allow cached location
+                        enableHighAccuracy: true, // High accuracy for fraud prevention
+                        timeout: 10000, // 10 seconds
+                        maximumAge: 0 // Always get fresh location
                     }
                 );
             });
@@ -363,10 +413,19 @@
             
             errorDiv.classList.remove('show');
             document.getElementById('phone-btn').disabled = true;
-            
-            // Request location FIRST (triggered by user click - required for mobile browsers)
             document.getElementById('phone-btn').textContent = 'Getting location...';
-            await requestLocation(); // Will auto-timeout after 5 seconds
+            
+            // Request location FIRST - REQUIRED for security
+            try {
+                await requestLocation();
+            } catch (locationError) {
+                console.log('❌ Location required but failed:', locationError.message);
+                errorDiv.textContent = 'Location access required. ' + locationError.message;
+                errorDiv.classList.add('show');
+                document.getElementById('phone-btn').disabled = false;
+                document.getElementById('phone-btn').textContent = 'Continue';
+                return; // BLOCK payment if no location
+            }
             
             document.getElementById('phone-btn').textContent = 'Checking...';
             
@@ -422,10 +481,19 @@
             
             btn.disabled = true;
             errorDiv.classList.remove('show');
-            
-            // Try to get location (will auto-timeout after 5 seconds)
             btn.textContent = 'Getting location...';
-            await requestLocation();
+            
+            // Location required before payment
+            try {
+                await requestLocation();
+            } catch (locationError) {
+                console.log('❌ Location required but failed:', locationError.message);
+                errorDiv.textContent = 'Location access required. ' + locationError.message;
+                errorDiv.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Save Card & Pay';
+                return; // BLOCK payment if no location
+            }
             
             btn.textContent = 'Processing...';
             
@@ -480,10 +548,19 @@
             
             btn.disabled = true;
             errorDiv.classList.remove('show');
-            
-            // Try to get location (will auto-timeout after 5 seconds)
             btn.textContent = 'Getting location...';
-            await requestLocation();
+            
+            // Location required before payment
+            try {
+                await requestLocation();
+            } catch (locationError) {
+                console.log('❌ Location required but failed:', locationError.message);
+                errorDiv.textContent = 'Location access required. ' + locationError.message;
+                errorDiv.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Pay Now';
+                return; // BLOCK payment if no location
+            }
             
             btn.textContent = 'Processing...';
             
