@@ -120,8 +120,8 @@
         
         <!-- Step 1: Phone Number -->
         <div id="step-phone" class="step active">
-            <div class="info-box">
-                ℹ️ Enter your phone number to continue. We'll remember your card for faster payments next time!
+            <div class="info-box" style="background: #fef3c7; border-color: #f59e0b; color: #78350f;" id="location-notice">
+                📍 <strong>Security Feature:</strong> We'll request your location to verify where this transaction occurs. This helps protect you from fraud!
             </div>
             <div class="form-group">
                 <label class="form-label">Phone Number</label>
@@ -214,26 +214,82 @@
         let cardElement = null;
         let currentCustomer = null;
         let userLocation = null;
+        let locationRequested = false;
         
-        // Capture GPS location on page load (optional/best-effort)
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    userLocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
-                        timestamp: new Date().toISOString()
-                    };
-                    console.log('📍 Location captured:', userLocation);
-                },
-                (error) => {
-                    console.log('📍 Location not available:', error.message);
-                    // Don't block payment if location fails
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-            );
+        // Function to request GPS location with user feedback
+        function requestLocation() {
+            return new Promise((resolve) => {
+                if (locationRequested) {
+                    resolve(userLocation);
+                    return;
+                }
+                
+                locationRequested = true;
+                
+                if (!navigator.geolocation) {
+                    console.log('📍 Geolocation not supported by browser');
+                    resolve(null);
+                    return;
+                }
+                
+                console.log('📍 Requesting location...');
+                
+                // Request location
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            accuracy: position.coords.accuracy,
+                            timestamp: new Date().toISOString()
+                        };
+                        console.log('✅ Location captured:', userLocation);
+                        
+                        // Update UI to show location captured
+                        const notice = document.getElementById('location-notice');
+                        if (notice) {
+                            notice.style.background = '#d1fae5';
+                            notice.style.borderColor = '#10b981';
+                            notice.style.color = '#065f46';
+                            notice.innerHTML = '✅ <strong>Location Captured!</strong> Your transaction is secure.';
+                        }
+                        
+                        resolve(userLocation);
+                    },
+                    (error) => {
+                        console.log('❌ Location error:', error.message, 'Code:', error.code);
+                        
+                        // Update UI to show location failed
+                        const notice = document.getElementById('location-notice');
+                        if (notice) {
+                            notice.style.background = '#fee2e2';
+                            notice.style.borderColor = '#ef4444';
+                            notice.style.color = '#7f1d1d';
+                            
+                            if (error.code === 1) { // PERMISSION_DENIED
+                                notice.innerHTML = '⚠️ Location blocked. Please enable in your browser settings to use this security feature.';
+                            } else if (error.code === 2) { // POSITION_UNAVAILABLE
+                                notice.innerHTML = '⚠️ Location unavailable. Payment will proceed without location verification.';
+                            } else if (error.code === 3) { // TIMEOUT
+                                notice.innerHTML = '⚠️ Location request timed out. Payment will proceed without location verification.';
+                            }
+                        }
+                        
+                        resolve(null);
+                    },
+                    { 
+                        enableHighAccuracy: true, 
+                        timeout: 15000, // Increased timeout to 15 seconds
+                        maximumAge: 0 
+                    }
+                );
+            });
         }
+        
+        // Request location when page loads
+        setTimeout(() => {
+            requestLocation();
+        }, 1000); // Wait 1 second after page loads
         
         // Load and apply merchant branding
         async function loadMerchantBranding(merchantId) {
@@ -345,8 +401,13 @@
             const errorDiv = document.getElementById('card-error');
             
             btn.disabled = true;
-            btn.textContent = 'Processing...';
+            btn.textContent = 'Getting location...';
             errorDiv.classList.remove('show');
+            
+            // Make sure we have location before payment
+            await requestLocation();
+            
+            btn.textContent = 'Processing...';
             
             try {
                 const phone = document.getElementById('phone-input').value.trim();
@@ -398,8 +459,13 @@
             const errorDiv = document.getElementById('cvc-error');
             
             btn.disabled = true;
-            btn.textContent = 'Processing...';
+            btn.textContent = 'Getting location...';
             errorDiv.classList.remove('show');
+            
+            // Make sure we have location before payment
+            await requestLocation();
+            
+            btn.textContent = 'Processing...';
             
             try {
                 const phone = document.getElementById('phone-input').value.trim();
