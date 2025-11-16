@@ -120,8 +120,13 @@
         
         <!-- Step 1: Phone Number -->
         <div id="step-phone" class="step active">
-            <div class="info-box" style="background: #fef3c7; border-color: #f59e0b; color: #78350f;" id="location-notice">
-                📍 <strong>Security Feature:</strong> When you click Continue, we'll request your location to verify where this transaction occurs. This helps protect you from fraud!
+            <div class="info-box" style="background: #fef3c7; border-color: #f59e0b; color: #78350f; font-size: 15px; line-height: 1.6;" id="location-notice">
+                📍 <strong style="font-size: 17px;">LOCATION REQUIRED:</strong><br>
+                <span style="font-size: 14px; display: block; margin-top: 8px;">
+                ⚠️ Turn ON Location Services in phone settings<br>
+                ⚠️ Allow location when browser asks<br>
+                <small style="opacity: 0.8;">If stuck, check browser console for errors</small>
+                </span>
             </div>
             <div class="form-group">
                 <label class="form-label">Phone Number</label>
@@ -220,6 +225,7 @@
         function requestLocation() {
             return new Promise((resolve) => {
                 if (locationRequested) {
+                    console.log('📍 Location already requested, returning cached:', userLocation);
                     resolve(userLocation);
                     return;
                 }
@@ -227,16 +233,19 @@
                 locationRequested = true;
                 
                 if (!navigator.geolocation) {
-                    console.log('📍 Geolocation not supported by browser');
+                    console.log('❌ Geolocation NOT SUPPORTED by browser');
+                    alert('GPS not supported by your browser');
                     resolve(null);
                     return;
                 }
                 
-                console.log('📍 Requesting location...');
+                console.log('📍 STARTING location request...');
+                console.log('📍 Browser:', navigator.userAgent);
+                console.log('📍 HTTPS:', window.location.protocol === 'https:');
                 
                 // Add our own timeout (5 seconds)
                 const timeoutId = setTimeout(() => {
-                    console.log('⚠️ Location request timeout (5s)');
+                    console.log('⚠️⚠️⚠️ LOCATION TIMEOUT (5s) - No response from browser');
                     const notice = document.getElementById('location-notice');
                     if (notice) {
                         notice.style.background = '#fee2e2';
@@ -244,10 +253,12 @@
                         notice.style.color = '#7f1d1d';
                         notice.innerHTML = '⚠️ Location timed out. Continuing without location...';
                     }
+                    console.log('📍 Resolving with NULL due to timeout');
                     resolve(null);
                 }, 5000); // 5 second timeout
                 
                 // Request location
+                console.log('📍 Calling getCurrentPosition...');
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         clearTimeout(timeoutId);
@@ -257,7 +268,8 @@
                             accuracy: position.coords.accuracy,
                             timestamp: new Date().toISOString()
                         };
-                        console.log('✅ Location captured:', userLocation);
+                        console.log('✅✅✅ Location SUCCESS:', userLocation);
+                        console.log('📍 Lat:', position.coords.latitude, 'Lng:', position.coords.longitude);
                         
                         // Update UI to show location captured
                         const notice = document.getElementById('location-notice');
@@ -272,7 +284,8 @@
                     },
                     (error) => {
                         clearTimeout(timeoutId);
-                        console.log('❌ Location error:', error.message, 'Code:', error.code);
+                        console.log('❌❌❌ Location ERROR:', error.message, 'Code:', error.code);
+                        console.log('❌ Error details:', error);
                         
                         // Update UI to show location failed
                         const notice = document.getElementById('location-notice');
