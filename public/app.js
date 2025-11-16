@@ -295,13 +295,41 @@ cancelQrBtn.addEventListener('click', () => {
     showScreen(amountScreen);
 });
 
-// Download receipt button
+// Download receipt button - Opens receipt with GPS location
 const downloadReceiptBtn = document.getElementById('download-receipt');
-downloadReceiptBtn.addEventListener('click', () => {
-    if (currentTransaction) {
-        generateReceipt(currentTransaction);
+downloadReceiptBtn.addEventListener('click', async () => {
+    if (currentTransaction && currentTransaction.id) {
+        // Try to open the API receipt (which has GPS location)
+        try {
+            // First check if user is authenticated (merchant)
+            const receiptUrl = `/api/merchant/receipt/${currentTransaction.id}`;
+            const response = await fetch(receiptUrl);
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Open receipt in new window
+                const receiptWindow = window.open('', '_blank', 'width=800,height=600');
+                receiptWindow.document.write(data.receiptHtml);
+                receiptWindow.document.close();
+            } else {
+                // Fallback to basic receipt if not authenticated
+                generateReceipt(currentTransaction);
+            }
+        } catch (error) {
+            console.log('Using fallback receipt:', error);
+            // Fallback to basic receipt
+            generateReceipt(currentTransaction);
+        }
     }
 });
+
+// Dashboard button
+const dashboardBtn = document.getElementById('go-to-dashboard');
+if (dashboardBtn) {
+    dashboardBtn.addEventListener('click', () => {
+        window.location.href = '/merchant-dashboard.html';
+    });
+}
 
 // Share receipt buttons
 const shareWhatsAppBtn = document.getElementById('share-whatsapp');
