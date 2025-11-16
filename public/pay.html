@@ -132,6 +132,7 @@
                 <input type="tel" id="phone-input" class="form-input" placeholder="+234 123 456 7890" required>
                 <div id="phone-error" class="error"></div>
             </div>
+            <button id="test-location-btn" class="btn" style="background: #6b7280; margin-bottom: 12px;">📍 Test My Location</button>
             <button id="phone-btn" class="btn">Continue</button>
         </div>
         
@@ -219,6 +220,43 @@
         let currentCustomer = null;
         let userLocation = null;
         let locationRequested = false;
+        
+        // Check location status immediately on page load
+        checkLocationStatusOnLoad();
+        
+        // Proactive check on page load
+        async function checkLocationStatusOnLoad() {
+            const notice = document.getElementById('location-notice');
+            
+            // Check if geolocation is supported
+            if (!navigator.geolocation) {
+                console.log('❌ Geolocation NOT supported');
+                notice.style.background = '#fee2e2';
+                notice.style.borderColor = '#dc2626';
+                notice.style.color = '#7f1d1d';
+                notice.innerHTML = '❌ <strong>GPS NOT SUPPORTED</strong><br><span style="font-size: 14px;">Your browser does not support location services. Please use Chrome, Safari, or Firefox.</span>';
+                return;
+            }
+            
+            // Check permission status
+            const permissionStatus = await checkLocationPermission();
+            console.log('📍 Initial permission status:', permissionStatus);
+            
+            if (permissionStatus === 'denied') {
+                notice.style.background = '#fee2e2';
+                notice.style.borderColor = '#dc2626';
+                notice.style.color = '#7f1d1d';
+                notice.innerHTML = '❌ <strong>LOCATION BLOCKED IN BROWSER</strong><br><span style="font-size: 14px;">Tap address bar → Site Settings → Permissions → Location → Allow</span>';
+            } else if (permissionStatus === 'granted') {
+                notice.style.background = '#d1fae5';
+                notice.style.borderColor = '#10b981';
+                notice.style.color = '#065f46';
+                notice.innerHTML = '✅ <strong>LOCATION ACCESS GRANTED</strong><br><span style="font-size: 14px;">Ready to capture transaction location for security.</span>';
+            } else {
+                // 'prompt' - will ask when user clicks Continue
+                notice.innerHTML = '🔒 <strong style="font-size: 17px;">LOCATION REQUIRED FOR SECURITY</strong><br><span style="font-size: 14px; display: block; margin-top: 8px;">This payment requires your GPS location to prevent fraud.<br><strong>When you click Continue, tap "Allow" on the browser prompt.</strong></span>';
+            }
+        }
         
         // Check location permission status
         async function checkLocationPermission() {
@@ -399,6 +437,42 @@
                 console.log('Could not load merchant branding:', error);
             }
         }
+        
+        // Test Location Button
+        document.getElementById('test-location-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('test-location-btn');
+            const originalText = btn.textContent;
+            
+            btn.disabled = true;
+            btn.textContent = '📍 Testing location...';
+            
+            try {
+                // Reset location request flag to force new request
+                locationRequested = false;
+                userLocation = null;
+                
+                await requestLocation();
+                
+                // If we get here, location was successful
+                btn.style.background = '#10b981';
+                btn.textContent = '✅ Location Works!';
+                
+                setTimeout(() => {
+                    btn.style.background = '#6b7280';
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 3000);
+            } catch (error) {
+                btn.style.background = '#dc2626';
+                btn.textContent = '❌ Location Failed';
+                btn.disabled = false;
+                
+                setTimeout(() => {
+                    btn.style.background = '#6b7280';
+                    btn.textContent = originalText;
+                }, 5000);
+            }
+        });
         
         // Step 1: Phone Number
         document.getElementById('phone-btn').addEventListener('click', async () => {
