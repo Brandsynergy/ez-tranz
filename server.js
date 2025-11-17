@@ -1044,11 +1044,25 @@ function generateReceiptHtml(transaction, merchantSettings) {
   if (transaction.location) {
     if (transaction.location.type === 'ip') {
       // IP-based location - show city/country
-      const { city, region, country, ip } = transaction.location;
+      const { city, region, country, ip, isVPN, org } = transaction.location;
+      
+      // VPN warning styling
+      const vpnWarning = isVPN ? `
+        <div style="background: #fee2e2; border: 2px solid #dc2626; padding: 12px; border-radius: 8px; margin-top: 12px;">
+          <p style="font-size: 13px; font-weight: 600; color: #991b1b; margin: 0; text-align: center;">
+            ⚠️ VPN/Proxy Detected
+          </p>
+          <p style="font-size: 11px; color: #7f1d1d; margin: 4px 0 0 0; text-align: center;">
+            ISP: ${org || 'Unknown'}<br>
+            High risk - Manual review recommended
+          </p>
+        </div>
+      ` : '';
+      
       locationHtml = `
         <div style="margin-top: 24px; padding-top: 24px; border-top: 2px dashed #e5e7eb;">
           <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">🌍 Transaction Location</h3>
-          <div style="background: #f9fafb; padding: 20px; border-radius: 12px; border: 2px solid #e5e7eb;">
+          <div style="background: ${isVPN ? '#fef2f2' : '#f9fafb'}; padding: 20px; border-radius: 12px; border: 2px solid ${isVPN ? '#fecaca' : '#e5e7eb'};">
             <p style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0; text-align: center;">
               📍 ${city}${region ? ', ' + region : ''}
             </p>
@@ -1058,6 +1072,7 @@ function generateReceiptHtml(transaction, merchantSettings) {
             <p style="font-size: 12px; color: #9ca3af; margin: 8px 0 0 0; text-align: center;">
               Location based on IP address
             </p>
+            ${vpnWarning}
           </div>
         </div>
       `;

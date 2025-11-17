@@ -269,6 +269,19 @@
                 
                 console.log('✅ IP location data:', data);
                 
+                // Detect VPN/Proxy indicators
+                const isVPN = data.org && (
+                    data.org.toLowerCase().includes('vpn') ||
+                    data.org.toLowerCase().includes('proxy') ||
+                    data.org.toLowerCase().includes('hosting') ||
+                    data.org.toLowerCase().includes('datacenter') ||
+                    data.org.toLowerCase().includes('cloud')
+                );
+                
+                if (isVPN) {
+                    console.warn('⚠️ VPN/Proxy detected:', data.org);
+                }
+                
                 return {
                     type: 'ip',
                     city: data.city,
@@ -277,6 +290,9 @@
                     latitude: data.latitude,
                     longitude: data.longitude,
                     ip: data.ip,
+                    org: data.org,
+                    asn: data.asn,
+                    isVPN: isVPN,
                     timestamp: new Date().toISOString()
                 };
             } catch (error) {
@@ -316,10 +332,17 @@
                     
                     const notice = document.getElementById('location-notice');
                     if (notice && ipLocation) {
-                        notice.style.background = '#fef3c7';
-                        notice.style.borderColor = '#f59e0b';
-                        notice.style.color = '#78350f';
-                        notice.innerHTML = `🌍 <strong>Using IP Location:</strong> ${ipLocation.city}, ${ipLocation.country}`;
+                        if (ipLocation.isVPN) {
+                            notice.style.background = '#fee2e2';
+                            notice.style.borderColor = '#dc2626';
+                            notice.style.color = '#7f1d1d';
+                            notice.innerHTML = `⚠️ <strong>VPN/Proxy Detected:</strong> ${ipLocation.city}, ${ipLocation.country}<br><span style="font-size: 12px;">This transaction will be flagged for review.</span>`;
+                        } else {
+                            notice.style.background = '#fef3c7';
+                            notice.style.borderColor = '#f59e0b';
+                            notice.style.color = '#78350f';
+                            notice.innerHTML = `🌍 <strong>Using IP Location:</strong> ${ipLocation.city}, ${ipLocation.country}`;
+                        }
                     }
                     
                     userLocation = ipLocation;
@@ -360,10 +383,17 @@
                         
                         const notice = document.getElementById('location-notice');
                         if (notice && ipLocation) {
-                            notice.style.background = '#fef3c7';
-                            notice.style.borderColor = '#f59e0b';
-                            notice.style.color = '#78350f';
-                            notice.innerHTML = `🌍 <strong>Using IP Location:</strong> ${ipLocation.city}, ${ipLocation.country}`;
+                            if (ipLocation.isVPN) {
+                                notice.style.background = '#fee2e2';
+                                notice.style.borderColor = '#dc2626';
+                                notice.style.color = '#7f1d1d';
+                                notice.innerHTML = `⚠️ <strong>VPN/Proxy Detected:</strong> ${ipLocation.city}, ${ipLocation.country}<br><span style="font-size: 12px;">This transaction will be flagged for review.</span>`;
+                            } else {
+                                notice.style.background = '#fef3c7';
+                                notice.style.borderColor = '#f59e0b';
+                                notice.style.color = '#78350f';
+                                notice.innerHTML = `🌍 <strong>Using IP Location:</strong> ${ipLocation.city}, ${ipLocation.country}`;
+                            }
                         }
                         
                         userLocation = ipLocation;
