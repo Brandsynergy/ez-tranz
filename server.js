@@ -1072,6 +1072,16 @@ function generateReceiptHtml(transaction, merchantSettings) {
             <p style="font-size: 12px; color: #9ca3af; margin: 8px 0 0 0; text-align: center;">
               Location based on IP address
             </p>
+            ${org ? `
+              <div style="margin-top: 12px; padding: 10px; background: white; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <p style="font-size: 11px; color: #9ca3af; margin: 0 0 4px 0; text-align: center;">
+                  Network Provider
+                </p>
+                <p style="font-size: 13px; font-weight: 600; color: #374151; margin: 0; text-align: center;">
+                  ${org}
+                </p>
+              </div>
+            ` : ''}
             ${vpnWarning}
           </div>
         </div>
