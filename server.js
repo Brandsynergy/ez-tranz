@@ -1039,32 +1039,54 @@ function generateReceiptHtml(transaction, merchantSettings) {
   
   const date = new Date(transaction.createdAt).toLocaleString();
   
-  // Location map embed
+  // Location embed - GPS or IP
   let locationHtml = '';
-  if (transaction.location && transaction.location.latitude && transaction.location.longitude) {
-    const { latitude, longitude } = transaction.location;
-    const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY || 'YOUR_GOOGLE_MAPS_API_KEY';
-    const mapUrl = `https://www.google.com/maps/embed/v1/place?key=${googleMapsKey}&q=${latitude},${longitude}&zoom=15`;
-    const linkUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-    
-    locationHtml = `
-      <div style="margin-top: 24px; padding-top: 24px; border-top: 2px dashed #e5e7eb;">
-        <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">📍 Transaction Location</h3>
-        <div style="border-radius: 12px; overflow: hidden; margin-bottom: 12px; border: 2px solid #e5e7eb;">
-          <iframe 
-            width="100%" 
-            height="200" 
-            frameborder="0" 
-            style="border:0; display: block;" 
-            src="${mapUrl}" 
-            allowfullscreen>
-          </iframe>
+  if (transaction.location) {
+    if (transaction.location.type === 'ip') {
+      // IP-based location - show city/country
+      const { city, region, country, ip } = transaction.location;
+      locationHtml = `
+        <div style="margin-top: 24px; padding-top: 24px; border-top: 2px dashed #e5e7eb;">
+          <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">🌍 Transaction Location</h3>
+          <div style="background: #f9fafb; padding: 20px; border-radius: 12px; border: 2px solid #e5e7eb;">
+            <p style="font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 8px 0; text-align: center;">
+              📍 ${city}${region ? ', ' + region : ''}
+            </p>
+            <p style="font-size: 14px; color: #6b7280; margin: 0; text-align: center;">
+              ${country}
+            </p>
+            <p style="font-size: 12px; color: #9ca3af; margin: 8px 0 0 0; text-align: center;">
+              Location based on IP address
+            </p>
+          </div>
         </div>
-        <p style="font-size: 12px; color: #6b7280; text-align: center;">
-          <a href="${linkUrl}" target="_blank" style="color: #6366f1; text-decoration: none;">View on Google Maps</a>
-        </p>
-      </div>
-    `;
+      `;
+    } else if (transaction.location.latitude && transaction.location.longitude) {
+      // GPS location - show map
+      const { latitude, longitude } = transaction.location;
+      const googleMapsKey = process.env.GOOGLE_MAPS_API_KEY || 'YOUR_GOOGLE_MAPS_API_KEY';
+      const mapUrl = `https://www.google.com/maps/embed/v1/place?key=${googleMapsKey}&q=${latitude},${longitude}&zoom=15`;
+      const linkUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      
+      locationHtml = `
+        <div style="margin-top: 24px; padding-top: 24px; border-top: 2px dashed #e5e7eb;">
+          <h3 style="font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px;">📍 GPS Transaction Location</h3>
+          <div style="border-radius: 12px; overflow: hidden; margin-bottom: 12px; border: 2px solid #e5e7eb;">
+            <iframe 
+              width="100%" 
+              height="200" 
+              frameborder="0" 
+              style="border:0; display: block;" 
+              src="${mapUrl}" 
+              allowfullscreen>
+            </iframe>
+          </div>
+          <p style="font-size: 12px; color: #6b7280; text-align: center;">
+            <a href="${linkUrl}" target="_blank" style="color: #6366f1; text-decoration: none;">View on Google Maps</a>
+          </p>
+        </div>
+      `;
+    }
   }
   
   return `
