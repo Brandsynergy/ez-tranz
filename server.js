@@ -1030,8 +1030,8 @@ app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, r
       });
     }
     
-    // Generate receipt HTML
-    const receiptHtml = generateReceiptHtml(transaction, merchantSettings);
+    // Generate receipt HTML (email-safe, no buttons)
+    const receiptHtml = generateReceiptHtml(transaction, merchantSettings, true);
     
     // Send email via Resend
     const fromEmail = process.env.RECEIPT_FROM_EMAIL || 'receipts@eztranz.com';
@@ -1076,7 +1076,7 @@ app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, r
 });
 
 // Generate receipt HTML
-function generateReceiptHtml(transaction, merchantSettings) {
+function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
   const currencySymbols = {
     USD: '$', EUR: '€', GBP: '£', NGN: '₦', INR: '₹', 
     JPY: '¥', CAD: 'C$', AUD: 'A$', BRL: 'R$', ZAR: 'R'
@@ -1344,18 +1344,48 @@ function generateReceiptHtml(transaction, merchantSettings) {
         
         <div class="footer">
           ${merchantSettings.receiptFooter || 'Thank you for your business!'}<br><br>
+          ${isEmail ? `
+          <a href="https://ez-tranz.onrender.com/receipt/${transaction.id}" style="display: inline-block; margin-top: 16px; padding: 14px 32px; background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);">
+            📥 View Full Receipt
+          </a><br><br>
+          ` : ''}
           <small style="color: #9ca3af;">This is your official payment receipt. Keep it for your records.</small>
         </div>
       </div>
       
+      ${!isEmail ? `
       <div class="actions">
-        <button onclick="window.print()" class="btn btn-primary">
+        <button id="btn-print" class="btn btn-primary">
           🖨️ Print / Save as PDF
         </button>
-        <button onclick="window.close()" class="btn btn-secondary">
+        <button id="btn-close" class="btn btn-secondary">
           Close
         </button>
       </div>
+      <script>
+        (function(){
+          var printBtn = document.getElementById('btn-print');
+          var closeBtn = document.getElementById('btn-close');
+          if (printBtn) {
+            printBtn.addEventListener('click', function(){
+              try { window.print(); }
+              catch (e) { alert('Use your browser share menu to print or save as PDF.'); }
+            });
+          }
+          if (closeBtn) {
+            closeBtn.addEventListener('click', function(){
+              if (window.history && window.history.length > 1) {
+                window.history.back();
+              } else if (document.referrer) {
+                window.location.href = document.referrer;
+              } else {
+                window.location.href = '/';
+              }
+            });
+          }
+        })();
+      </script>
+      ` : ''}
     </body>
     </html>
   `;
