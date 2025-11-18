@@ -967,6 +967,39 @@ app.get('/api/merchant/receipt/:transactionId', requireAuth, (req, res) => {
   }
 });
 
+// Public receipt view (no auth required) - for email links
+app.get('/receipt/:transactionId', (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    
+    // Search all merchants for this transaction
+    const merchants = db.getAllMerchants();
+    let transaction = null;
+    let merchantSettings = null;
+    
+    for (const merchant of merchants) {
+      const txn = db.getTransactionById(merchant.id, transactionId);
+      if (txn) {
+        transaction = txn;
+        merchantSettings = db.getMerchantSettings(merchant.id);
+        break;
+      }
+    }
+    
+    if (!transaction) {
+      return res.status(404).send('<h1>Receipt Not Found</h1><p>This transaction does not exist or has been deleted.</p>');
+    }
+    
+    // Generate and send HTML directly
+    const receiptHtml = generateReceiptHtml(transaction, merchantSettings);
+    res.setHeader('Content-Type', 'text/html');
+    res.send(receiptHtml);
+  } catch (error) {
+    console.error('Error loading public receipt:', error);
+    res.status(500).send('<h1>Error Loading Receipt</h1><p>Please try again later.</p>');
+  }
+});
+
 // Send receipt via email
 app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, res) => {
   try {
@@ -1288,8 +1321,8 @@ function generateReceiptHtml(transaction, merchantSettings) {
         
         <div class="footer">
           ${merchantSettings.receiptFooter || 'Thank you for your business!'}<br><br>
-          <a href="https://ez-tranz.onrender.com/api/merchant/receipt/${transaction.id}" class="download-btn" style="display: inline-block; margin-top: 16px; padding: 14px 32px; background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
-            📥 Download Full Receipt
+          <a href="https://ez-tranz.onrender.com/receipt/${transaction.id}" class="download-btn" style="display: inline-block; margin-top: 16px; padding: 14px 32px; background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
+            📥 View Full Receipt
           </a><br><br>
           <small style="color: #9ca3af;">This is your official payment receipt. Keep it for your records.</small>
         </div>

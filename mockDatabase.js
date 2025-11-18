@@ -434,6 +434,15 @@ function getDemoMerchantId() {
     return DEMO_MERCHANT_ID;
 }
 
+function getAllMerchants() {
+    const allMerchants = [];
+    for (const [id, merchant] of merchants.entries()) {
+        const { password, ...merchantData } = merchant;
+        allMerchants.push(merchantData);
+    }
+    return allMerchants;
+}
+
 module.exports = {
     // Auth
     createMerchant,
@@ -456,6 +465,7 @@ module.exports = {
     
     // Merchant
     getMerchantById,
+    getAllMerchants,
     
     // Stripe Connect
     updateMerchantStripeAccount,
