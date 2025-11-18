@@ -1018,13 +1018,24 @@ app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, r
     });
   } catch (error) {
     console.error('❌ Error sending receipt:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      statusCode: error.statusCode,
+      name: error.name,
+      stack: error.stack
+    });
     
-    // Provide helpful error messages
+    // Provide detailed error messages
     let errorMessage = 'Failed to send receipt';
-    if (error.message && error.message.includes('API key')) {
-      errorMessage = 'Email service not configured correctly. Please check your RESEND_API_KEY.';
+    
+    if (error.statusCode === 403 || (error.message && error.message.includes('API key'))) {
+      errorMessage = 'Invalid Resend API key. Please check your RESEND_API_KEY in Render environment variables.';
+    } else if (error.statusCode === 422 || (error.message && error.message.includes('from'))) {
+      errorMessage = `Invalid sender email. Current: ${process.env.RECEIPT_FROM_EMAIL}. Use onboarding@resend.dev for testing.`;
+    } else if (error.statusCode === 429) {
+      errorMessage = 'Rate limit exceeded. Resend free tier: 100 emails/day. Please wait or upgrade.';
     } else if (error.message) {
-      errorMessage = error.message;
+      errorMessage = `Resend API Error: ${error.message}`;
     }
     
     res.status(500).json({ error: errorMessage });
