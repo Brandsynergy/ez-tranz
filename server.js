@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Resend } = require('resend');
+const twilio = require('twilio');
 
 // Validate Stripe key
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -13,7 +14,14 @@ if (!process.env.STRIPE_SECRET_KEY) {
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 // Initialize Resend for email sending
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_YourResendAPIKeyHere' 
+  ? new Resend(process.env.RESEND_API_KEY) 
+  : null;
+
+// Initialize Twilio for SMS sending
+const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER)
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -1021,6 +1029,79 @@ app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, r
     let errorMessage = 'Failed to send receipt';
     if (error.message && error.message.includes('API key')) {
       errorMessage = 'Email service not configured correctly. Please check your RESEND_API_KEY.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    res.status(500).json({ error: errorMessage });
+  }
+});
+
+// Send receipt via SMS
+app.post('/api/merchant/receipt/:transactionId/send-sms', requireAuth, async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    const { phone } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number required' });
+    }
+    
+    const transaction = db.getTransactionById(req.merchantId, transactionId);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    
+    const merchantSettings = db.getMerchantSettings(req.merchantId);
+    
+    // Check if Twilio is configured
+    if (!twilioClient) {
+      console.log(`📱 SMS not configured - Would send receipt for transaction ${transactionId} to ${phone}`);
+      return res.json({ 
+        success: false, 
+        message: 'SMS service not configured',
+        note: 'To enable SMS: Sign up at twilio.com and add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER to your environment variables'
+      });
+    }
+    
+    // Format SMS message
+    const currencySymbols = {
+      USD: '$', EUR: '€', GBP: '£', NGN: '₦', INR: '₹', 
+      JPY: '¥', CAD: 'C$', AUD: 'A$', BRL: 'R$', ZAR: 'R'
+    };
+    const symbol = currencySymbols[transaction.currency] || transaction.currency + ' ';
+    const bizName = merchantSettings.businessName || 'EZ TRANZ';
+    const date = new Date(transaction.createdAt).toLocaleString();
+    
+    const smsMessage = `🧾 Payment Receipt - ${bizName}\n\n` +
+                      `Amount: ${symbol}${transaction.amount.toFixed(2)} ${transaction.currency}\n` +
+                      `Transaction ID: ${transaction.id}\n` +
+                      `Date: ${date}\n` +
+                      `Status: ✅ Completed\n\n` +
+                      `Thank you for your payment!`;
+    
+    // Send SMS via Twilio
+    const message = await twilioClient.messages.create({
+      body: smsMessage,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phone
+    });
+    
+    console.log(`✅ Receipt SMS sent successfully to ${phone} - Message SID: ${message.sid}`);
+    
+    res.json({ 
+      success: true, 
+      message: `Receipt sent via SMS to ${phone}`,
+      messageSid: message.sid
+    });
+  } catch (error) {
+    console.error('❌ Error sending SMS receipt:', error);
+    
+    // Provide helpful error messages
+    let errorMessage = 'Failed to send SMS';
+    if (error.message && error.message.includes('phone number')) {
+      errorMessage = 'Invalid phone number format. Use E.164 format (e.g., +1234567890)';
     } else if (error.message) {
       errorMessage = error.message;
     }

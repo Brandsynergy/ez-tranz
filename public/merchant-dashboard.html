@@ -778,7 +778,8 @@
                         <td>
                             <div class="receipt-actions">
                                 <button class="btn-icon btn-print" onclick="printReceipt('${txn.id}')" title="Print Receipt">🖨️ Print</button>
-                                <button class="btn-icon btn-send" onclick="sendReceipt('${txn.id}')" title="Send Receipt">📧 Send</button>
+                                <button class="btn-icon btn-send" onclick="sendReceipt('${txn.id}')" title="Email Receipt">📧 Email</button>
+                                <button class="btn-icon btn-sms" onclick="sendSms('${txn.id}')" title="SMS Receipt">💬 SMS</button>
                             </div>
                         </td>
                     </tr>
@@ -1327,10 +1328,45 @@
                 }
                 
                 const data = await response.json();
-                alert(`✅ ${data.message}\n\n🚧 ${data.note || ''}`);
+                alert(`✅ ${data.message}\n\n🚚 ${data.note || ''}`);
             } catch (error) {
                 console.error('Error sending receipt:', error);
                 alert('❌ Failed to send receipt: ' + error.message);
+            }
+        }
+        
+        async function sendSms(transactionId) {
+            const phone = prompt('📱 Enter customer phone number (with country code, e.g., +1234567890):');
+            if (!phone) return;
+            
+            // Basic phone validation (E.164 format)
+            const phoneRegex = /^\+[1-9]\d{1,14}$/;
+            if (!phoneRegex.test(phone)) {
+                alert('❌ Please enter a valid phone number in E.164 format\n\nExample: +1234567890 (with country code)');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/merchant/receipt/${transactionId}/send-sms`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to send SMS');
+                }
+                
+                if (data.success) {
+                    alert(`✅ ${data.message}`);
+                } else {
+                    alert(`⚠️ ${data.message}\n\n💡 ${data.note || ''}`);
+                }
+            } catch (error) {
+                console.error('Error sending SMS:', error);
+                alert('❌ Failed to send SMS: ' + error.message);
             }
         }
         
