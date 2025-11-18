@@ -1374,13 +1374,12 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
           }
           if (closeBtn) {
             closeBtn.addEventListener('click', function(){
-              if (window.history && window.history.length > 1) {
-                window.history.back();
-              } else if (document.referrer) {
-                window.location.href = document.referrer;
-              } else {
-                window.location.href = '/';
-              }
+              // Try to close the window/tab
+              window.close();
+              // If that doesn't work (browser security), show message
+              setTimeout(function(){
+                alert('You can now close this tab.');
+              }, 100);
             });
           }
         })();
