@@ -1258,17 +1258,40 @@ function generateReceiptHtml(transaction, merchantSettings) {
           color: #6b7280;
           line-height: 1.6;
         }
-        .download-btn {
+        .actions {
+          margin-top: 32px;
+          text-align: center;
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+        .btn {
           display: inline-block;
-          margin-top: 24px;
           padding: 14px 32px;
-          background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%);
-          color: white;
-          text-decoration: none;
+          border: none;
           border-radius: 8px;
           font-weight: 600;
           font-size: 15px;
+          cursor: pointer;
+          text-decoration: none;
+          transition: transform 0.2s;
+        }
+        .btn:hover {
+          transform: translateY(-2px);
+        }
+        .btn-primary {
+          background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%);
+          color: white;
           box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+        .btn-secondary {
+          background: white;
+          color: #374151;
+          border: 2px solid #e5e7eb;
+        }
+        @media print {
+          .actions { display: none; }
         }
         @media (max-width: 768px) {
           body { padding: 20px 10px; }
@@ -1321,11 +1344,17 @@ function generateReceiptHtml(transaction, merchantSettings) {
         
         <div class="footer">
           ${merchantSettings.receiptFooter || 'Thank you for your business!'}<br><br>
-          <a href="https://ez-tranz.onrender.com/receipt/${transaction.id}" class="download-btn" style="display: inline-block; margin-top: 16px; padding: 14px 32px; background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
-            📥 View Full Receipt
-          </a><br><br>
           <small style="color: #9ca3af;">This is your official payment receipt. Keep it for your records.</small>
         </div>
+      </div>
+      
+      <div class="actions">
+        <button onclick="window.print()" class="btn btn-primary">
+          🖨️ Print / Save as PDF
+        </button>
+        <button onclick="window.close()" class="btn btn-secondary">
+          Close
+        </button>
       </div>
     </body>
     </html>
