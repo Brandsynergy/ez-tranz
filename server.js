@@ -1200,6 +1200,9 @@ function generateReceiptHtml(transaction, merchantSettings) {
           font-size: 14px;
           color: #1f2937;
           font-weight: 600;
+          text-align: right;
+          word-break: break-all;
+          max-width: 60%;
         }
         .amount-row {
           margin-top: 16px;
@@ -1221,6 +1224,18 @@ function generateReceiptHtml(transaction, merchantSettings) {
           font-size: 14px;
           color: #6b7280;
           line-height: 1.6;
+        }
+        .download-btn {
+          display: inline-block;
+          margin-top: 24px;
+          padding: 14px 32px;
+          background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%);
+          color: white;
+          text-decoration: none;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 15px;
+          box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
         }
         @media (max-width: 768px) {
           body { padding: 20px 10px; }
@@ -1273,6 +1288,9 @@ function generateReceiptHtml(transaction, merchantSettings) {
         
         <div class="footer">
           ${merchantSettings.receiptFooter || 'Thank you for your business!'}<br><br>
+          <a href="https://ez-tranz.onrender.com/api/merchant/receipt/${transaction.id}" class="download-btn" style="display: inline-block; margin-top: 16px; padding: 14px 32px; background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">
+            📥 Download Full Receipt
+          </a><br><br>
           <small style="color: #9ca3af;">This is your official payment receipt. Keep it for your records.</small>
         </div>
       </div>
