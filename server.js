@@ -1211,57 +1211,11 @@ function generateReceiptHtml(transaction, merchantSettings) {
           color: #6b7280;
           line-height: 1.6;
         }
-        .actions {
-          margin-top: 32px;
-          text-align: center;
-          display: flex;
-          gap: 12px;
-          justify-content: center;
-        }
-        .btn {
-          padding: 12px 24px;
-          border: none;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .btn-primary {
-          background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%);
-          color: white;
-        }
-        .btn-secondary {
-          background: white;
-          color: #374151;
-          border: 2px solid #e5e7eb;
-        }
-        .btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .btn:active {
-          transform: translateY(0);
-        }
         @media (max-width: 768px) {
           body { padding: 20px 10px; }
           .receipt { padding: 24px; }
-          .actions { flex-direction: column; }
-          .btn { width: 100%; padding: 16px; font-size: 16px; }
         }
       </style>
-      <script>
-        function printReceipt() {
-          // Hide buttons before printing
-          document.querySelector('.actions').style.display = 'none';
-          // Trigger print
-          window.print();
-          // Show buttons again after print dialog closes
-          setTimeout(() => {
-            document.querySelector('.actions').style.display = 'flex';
-          }, 100);
-        }
-      </script>
     </head>
     <body>
       <div class="receipt">
@@ -1307,13 +1261,9 @@ function generateReceiptHtml(transaction, merchantSettings) {
         ${locationHtml}
         
         <div class="footer">
-          ${merchantSettings.receiptFooter || 'Thank you for your business!'}
+          ${merchantSettings.receiptFooter || 'Thank you for your business!'}<br><br>
+          <small style="color: #9ca3af;">This is your official payment receipt. Keep it for your records.</small>
         </div>
-      </div>
-      
-      <div class="actions no-print">
-        <button class="btn btn-primary" onclick="window.print()">🖨️ Print Receipt</button>
-        <button class="btn btn-secondary" onclick="window.close()">Close</button>
       </div>
     </body>
     </html>
