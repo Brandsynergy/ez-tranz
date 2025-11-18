@@ -334,7 +334,6 @@ if (dashboardBtn) {
 // Share receipt buttons
 const shareWhatsAppBtn = document.getElementById('share-whatsapp');
 const shareEmailBtn = document.getElementById('share-email');
-const shareSmsBtn = document.getElementById('share-sms');
 
 shareWhatsAppBtn.addEventListener('click', () => {
     if (currentTransaction) {
@@ -345,12 +344,6 @@ shareWhatsAppBtn.addEventListener('click', () => {
 shareEmailBtn.addEventListener('click', () => {
     if (currentTransaction) {
         shareViaEmail(currentTransaction);
-    }
-});
-
-shareSmsBtn.addEventListener('click', () => {
-    if (currentTransaction) {
-        shareViaSMS(currentTransaction);
     }
 });
 
@@ -409,24 +402,6 @@ function shareViaEmail(transaction) {
     
     const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailtoUrl;
-}
-
-// Share receipt via SMS
-function shareViaSMS(transaction) {
-    const bizName = (BRANDING && BRANDING.businessName) ? BRANDING.businessName : 'EZ TRANZ';
-    const date = transaction.date.toLocaleDateString('en-US', { 
-        year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-    });
-    
-    const message = `Payment Receipt - ${bizName}\n` +
-                   `Amount: ${transaction.symbol}${transaction.amount.toFixed(2)} ${transaction.currency}\n` +
-                   `ID: ${transaction.id.substring(0, 16)}...\n` +
-                   `Date: ${date}\n` +
-                   `Status: Completed`;
-    
-    const smsUrl = `sms:?body=${encodeURIComponent(message)}`;
-    window.location.href = smsUrl;
 }
 
 // Generate and download receipt
