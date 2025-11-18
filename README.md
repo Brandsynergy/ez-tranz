@@ -51,6 +51,8 @@ See **[FEATURES.md](./FEATURES.md)** for complete documentation including:
 - Security details
 - Deployment guide
 
+**⚠️ [EMAIL_SMS_SETUP.md](./EMAIL_SMS_SETUP.md)** - **REQUIRED:** Setup guide for email and SMS receipts
+
 ## ⚠️ STABLE VERSION CHECKPOINT
 
 **This version (v2.0-stable) is fully documented and production-ready.**
