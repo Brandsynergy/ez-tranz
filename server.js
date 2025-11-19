@@ -1018,6 +1018,12 @@ app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, r
     
     const merchantSettings = db.getMerchantSettings(req.merchantId);
     
+    console.log('📧 Merchant Settings for Email:', {
+      businessName: merchantSettings?.businessName,
+      logoUrl: merchantSettings?.logoUrl,
+      hasLogo: !!merchantSettings?.logoUrl
+    });
+    
     // Check if Resend is configured
     if (!resend || !process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_YourResendAPIKeyHere') {
       console.log(`📧 Email not configured - Would send receipt for transaction ${transactionId} to ${email}`);
@@ -1303,7 +1309,13 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
     </head>
     <body>
       <div class="receipt">
-        ${merchantSettings && merchantSettings.logoUrl ? `<div class="logo"><img src="${merchantSettings.logoUrl}" alt="${merchantSettings.businessName || 'Logo'}" style="max-width: 180px; max-height: 60px; width: auto; height: auto; object-fit: contain;"></div>` : `<div class="logo" style="font-size: 32px; margin-bottom: 16px;">💳</div>`}
+        ${merchantSettings && merchantSettings.logoUrl ? `
+        <div class="logo">
+          <img src="${merchantSettings.logoUrl.startsWith('http') ? merchantSettings.logoUrl : 'https://ez-tranz.onrender.com' + merchantSettings.logoUrl}" 
+               alt="${merchantSettings.businessName || 'Logo'}" 
+               style="max-width: 180px; max-height: 60px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto;">
+        </div>` : `
+        <div class="logo" style="font-size: 32px; margin-bottom: 16px; text-align: center;">💳</div>`}
         <div class="business-name">${merchantSettings && merchantSettings.businessName ? merchantSettings.businessName : 'EZ TRANZ'}</div>
         <div class="business-info">
           ${merchantSettings.address ? merchantSettings.address + '<br>' : ''}
