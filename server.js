@@ -1276,6 +1276,8 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
           cursor: pointer;
           text-decoration: none;
           transition: transform 0.2s;
+          white-space: nowrap;
+          min-width: 200px;
         }
         .btn:hover {
           transform: translateY(-2px);
@@ -1356,7 +1358,8 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
       ${!isEmail ? `
       <div class="actions">
         <button id="btn-print" class="btn btn-primary">
-          🖨️ Print / Save as PDF
+          <span style="font-size: 18px; margin-right: 8px;">🖨️</span>
+          <span>Print / Save as PDF</span>
         </button>
       </div>
       <script>
