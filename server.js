@@ -1303,8 +1303,8 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
     </head>
     <body>
       <div class="receipt">
-        ${merchantSettings.logoUrl ? `<div class="logo"><img src="${merchantSettings.logoUrl}" alt="${merchantSettings.businessName}" style="max-width: 180px; max-height: 60px; width: auto; height: auto; object-fit: contain;"></div>` : ''}
-        <div class="business-name">${merchantSettings.businessName || 'EZ TRANZ'}</div>
+        ${merchantSettings && merchantSettings.logoUrl ? `<div class="logo"><img src="${merchantSettings.logoUrl}" alt="${merchantSettings.businessName || 'Logo'}" style="max-width: 180px; max-height: 60px; width: auto; height: auto; object-fit: contain;"></div>` : `<div class="logo" style="font-size: 32px; margin-bottom: 16px;">💳</div>`}
+        <div class="business-name">${merchantSettings && merchantSettings.businessName ? merchantSettings.businessName : 'EZ TRANZ'}</div>
         <div class="business-info">
           ${merchantSettings.address ? merchantSettings.address + '<br>' : ''}
           ${merchantSettings.phone ? merchantSettings.phone + '<br>' : ''}
