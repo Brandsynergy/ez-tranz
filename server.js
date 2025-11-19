@@ -1083,29 +1083,6 @@ app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, r
 
 // Generate receipt HTML
 function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
-  // Ensure merchantSettings exists with defaults
-  if (!merchantSettings) {
-    console.error('⚠️ merchantSettings is null/undefined in generateReceiptHtml');
-    merchantSettings = {
-      businessName: 'EZ TRANZ',
-      logoUrl: null,
-      primaryColor: '#6366f1',
-      secondaryColor: '#8b5cf6',
-      address: '',
-      phone: '',
-      businessEmail: '',
-      receiptFooter: 'Thank you for your business!'
-    };
-  }
-  
-  console.log('📄 Generating receipt HTML:', {
-    transactionId: transaction.id,
-    businessName: merchantSettings.businessName,
-    hasLogo: !!merchantSettings.logoUrl,
-    logoUrlLength: merchantSettings.logoUrl ? merchantSettings.logoUrl.length : 0,
-    isEmail: isEmail
-  });
-  
   const currencySymbols = {
     USD: '$', EUR: '€', GBP: '£', NGN: '₦', INR: '₹', 
     JPY: '¥', CAD: 'C$', AUD: 'A$', BRL: 'R$', ZAR: 'R'
@@ -1332,14 +1309,14 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
     </head>
     <body>
       <div class="receipt">
-        ${merchantSettings.logoUrl ? `
+        ${merchantSettings && merchantSettings.logoUrl ? `
         <div class="logo">
-          <img src="${merchantSettings.logoUrl}" 
-               alt="${merchantSettings.businessName}" 
+          <img src="${merchantSettings.logoUrl.startsWith('http') ? merchantSettings.logoUrl : 'https://ez-tranz.onrender.com' + merchantSettings.logoUrl}" 
+               alt="${merchantSettings.businessName || 'Logo'}" 
                style="max-width: 180px; max-height: 60px; width: auto; height: auto; object-fit: contain; display: block; margin: 0 auto;">
         </div>` : `
         <div class="logo" style="font-size: 32px; margin-bottom: 16px; text-align: center;">💳</div>`}
-        <div class="business-name">${merchantSettings.businessName}</div>
+        <div class="business-name">${merchantSettings && merchantSettings.businessName ? merchantSettings.businessName : 'EZ TRANZ'}</div>
         <div class="business-info">
           ${merchantSettings.address ? merchantSettings.address + '<br>' : ''}
           ${merchantSettings.phone ? merchantSettings.phone + '<br>' : ''}
