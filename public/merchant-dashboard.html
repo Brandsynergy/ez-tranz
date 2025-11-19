@@ -11,7 +11,7 @@
         
         /* Dashboard Layout */
         .dashboard { display: flex; min-height: 100vh; }
-        .sidebar { width: 260px; background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 24px; }
+        .sidebar { width: 260px; background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 24px; display: flex; flex-direction: column; }
         .main-content { flex: 1; padding: 32px; }
         
         /* Sidebar */
@@ -357,6 +357,11 @@
             </nav>
             
             <button class="logout-btn" id="logout-btn">🚪 Logout</button>
+            
+            <div style="margin-top: auto; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 12px; opacity: 0.9;">
+                <div style="margin-bottom: 8px;">Contact: <a href="mailto:support@mivado.co" style="color: white; text-decoration: none;">support@mivado.co</a></div>
+                <div style="opacity: 0.7;">© 2025 Mediad Innovations</div>
+            </div>
         </aside>
         
         <!-- Main Content -->
