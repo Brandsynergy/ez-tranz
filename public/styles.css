@@ -421,20 +421,20 @@ body {
 }
 
 .share-buttons {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
     margin-top: 12px;
-    padding: 12px;
+    padding: 16px;
     background: #f9fafb;
     border-radius: 0 0 10px 10px;
 }
 
 .share-btn {
-    padding: 10px;
+    padding: 14px 24px;
     border: none;
-    border-radius: 8px;
-    font-size: 13px;
+    border-radius: 10px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -442,8 +442,9 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
     color: white;
+    min-width: 120px;
 }
 
 .share-btn:active {
