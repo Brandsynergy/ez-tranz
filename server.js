@@ -1347,11 +1347,11 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
         <div class="footer">
           ${merchantSettings.receiptFooter || 'Thank you for your business!'}<br><br>
           ${isEmail ? `
-          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 20px auto;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 24px auto;">
             <tr>
-              <td style="border-radius: 8px; background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%); box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);">
-                <a href="https://ez-tranz.onrender.com/receipt/${transaction.id}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                  View Full Receipt
+              <td align="center" style="border-radius: 8px; background: ${merchantSettings.primaryColor || '#6366f1'}; padding: 0;">
+                <a href="https://ez-tranz.onrender.com/receipt/${transaction.id}" style="display: block; padding: 16px 40px; color: #ffffff !important; text-decoration: none; font-weight: 600; font-size: 16px; line-height: 1.5; font-family: Arial, sans-serif;">
+                  <strong style="color: #ffffff;">View Full Receipt</strong>
                 </a>
               </td>
             </tr>
