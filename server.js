@@ -1347,9 +1347,15 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
         <div class="footer">
           ${merchantSettings.receiptFooter || 'Thank you for your business!'}<br><br>
           ${isEmail ? `
-          <a href="https://ez-tranz.onrender.com/receipt/${transaction.id}" style="display: inline-block; margin-top: 16px; padding: 14px 32px; background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);">
-            📥 View Full Receipt
-          </a><br><br>
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 20px auto;">
+            <tr>
+              <td style="border-radius: 8px; background: linear-gradient(135deg, ${merchantSettings.primaryColor || '#6366f1'} 0%, ${merchantSettings.secondaryColor || '#8b5cf6'} 100%); box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);">
+                <a href="https://ez-tranz.onrender.com/receipt/${transaction.id}" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                  View Full Receipt
+                </a>
+              </td>
+            </tr>
+          </table>
           ` : ''}
           <small style="color: #9ca3af;">This is your official payment receipt. Keep it for your records.</small>
         </div>
