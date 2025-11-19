@@ -1358,28 +1358,14 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
         <button id="btn-print" class="btn btn-primary">
           🖨️ Print / Save as PDF
         </button>
-        <button id="btn-close" class="btn btn-secondary">
-          Close
-        </button>
       </div>
       <script>
         (function(){
           var printBtn = document.getElementById('btn-print');
-          var closeBtn = document.getElementById('btn-close');
           if (printBtn) {
             printBtn.addEventListener('click', function(){
               try { window.print(); }
               catch (e) { alert('Use your browser share menu to print or save as PDF.'); }
-            });
-          }
-          if (closeBtn) {
-            closeBtn.addEventListener('click', function(){
-              // Try to close the window/tab
-              window.close();
-              // If that doesn't work (browser security), show message
-              setTimeout(function(){
-                alert('You can now close this tab.');
-              }, 100);
             });
           }
         })();
