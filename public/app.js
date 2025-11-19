@@ -86,6 +86,10 @@ function applyBranding(settings) {
     const logoContainer = document.getElementById('merchant-logo');
     const logoImg = document.getElementById('merchant-logo-img');
     const logoEl = document.getElementById('terminal-logo');
+    const merchantDetails = document.getElementById('merchant-details');
+    const merchantBusinessName = document.getElementById('merchant-business-name');
+    const merchantAddress = document.getElementById('merchant-address');
+    const merchantPhone = document.getElementById('merchant-phone');
     
     console.log('Elements found:', {logoContainer: !!logoContainer, logoImg: !!logoImg, logoEl: !!logoEl});
     
@@ -106,6 +110,20 @@ function applyBranding(settings) {
                 logoEl.textContent = `💳 ${settings.businessName}`;
             }
         }
+    }
+    
+    // Show merchant business details (name, address, phone)
+    if (merchantDetails && (settings.businessName || settings.address || settings.phone)) {
+        if (merchantBusinessName && settings.businessName) {
+            merchantBusinessName.textContent = settings.businessName;
+        }
+        if (merchantAddress && settings.address) {
+            merchantAddress.textContent = settings.address;
+        }
+        if (merchantPhone && settings.phone) {
+            merchantPhone.textContent = settings.phone;
+        }
+        merchantDetails.style.display = 'block';
     }
 }
 
