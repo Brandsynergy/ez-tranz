@@ -1383,6 +1383,11 @@ function generateReceiptHtml(transaction, merchantSettings, isEmail = false) {
       </style>
     </head>
     <body>
+      ${isEmail && merchantSettings?.logoUrl ? `
+      <div style="background: #fef3c7; border: 2px solid #f59e0b; padding: 12px; border-radius: 8px; margin-bottom: 16px; text-align: center;">
+        <p style="font-size: 13px; color: #92400e; margin: 0; font-weight: 600;">📧 Using Gmail? Click "Display images below" to see the logo</p>
+      </div>
+      ` : ''}
       <div class="receipt">
         ${(merchantSettings?.logoUrl) ? `<div class="logo"><img src="${merchantSettings.logoUrl}" alt="${merchantSettings?.businessName || 'Logo'}" style="max-width:180px;max-height:60px;width:auto;height:auto;object-fit:contain;display:block;margin:0 auto;"></div>` : `<div class="logo" style="font-size:32px;margin-bottom:16px;text-align:center;">💳</div>`}
         <div class="business-name">${merchantSettings?.businessName || 'EZ TRANZ'}</div>
