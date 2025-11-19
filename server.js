@@ -2,6 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { Resend } = require('resend');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Validate Stripe key
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -16,6 +19,18 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_YourResendAPIKeyHere' 
   ? new Resend(process.env.RESEND_API_KEY) 
   : null;
+
+// Configure Cloudinary for logo uploads
+if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+  console.log('✅ Cloudinary configured successfully');
+} else {
+  console.warn('⚠️  Cloudinary credentials not found - logo uploads will be disabled');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -447,6 +462,66 @@ app.put('/api/merchant/settings', requireAuth, (req, res) => {
     console.error('❌ Update settings error:', error);
     console.error('❌ Error stack:', error.stack);
     res.status(400).json({ error: error.message || 'Failed to update settings' });
+  }
+});
+
+// Upload Logo to Cloudinary
+app.post('/api/merchant/upload-logo', requireAuth, upload.single('logo'), async (req, res) => {
+  try {
+    // Check if Cloudinary is configured
+    if (!process.env.CLOUDINARY_CLOUD_NAME) {
+      return res.status(503).json({ error: 'Logo upload service not configured' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    console.log('📤 Uploading logo for merchant:', req.merchantId);
+    console.log('📤 File size:', req.file.size, 'bytes');
+    console.log('📤 File type:', req.file.mimetype);
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({ error: 'Invalid file type. Please upload an image (JPEG, PNG, GIF, or WebP)' });
+    }
+
+    // Validate file size (max 5MB)
+    if (req.file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({ error: 'File too large. Maximum size is 5MB' });
+    }
+
+    // Upload to Cloudinary
+    // Convert buffer to base64
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: 'ez-tranz/logos',
+      public_id: `merchant_${req.merchantId}_${Date.now()}`,
+      transformation: [
+        { width: 500, height: 500, crop: 'limit' }, // Max 500x500, maintain aspect ratio
+        { quality: 'auto' }, // Automatic quality optimization
+        { fetch_format: 'auto' } // Automatic format selection (WebP if supported)
+      ]
+    });
+
+    console.log('✅ Logo uploaded to Cloudinary:', result.secure_url);
+
+    // Update merchant settings with new logo URL
+    const settings = db.updateMerchantSettings(req.merchantId, {
+      logoUrl: result.secure_url
+    });
+
+    res.json({ 
+      success: true, 
+      logoUrl: result.secure_url,
+      settings 
+    });
+  } catch (error) {
+    console.error('❌ Logo upload error:', error);
+    res.status(500).json({ error: 'Failed to upload logo: ' + error.message });
   }
 });
 

@@ -756,8 +756,11 @@
                 updateColorPreview('primary', settings.primaryColor);
                 updateColorPreview('secondary', settings.secondaryColor);
                 applyBranding(settings);
+                
+                return settings;
             } catch (error) {
                 console.error('Error loading settings:', error);
+                return null;
             }
         }
         
@@ -863,18 +866,61 @@
         
         logoUploadArea.addEventListener('click', () => logoInput.click());
         
-        logoInput.addEventListener('change', (e) => {
+        logoInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {
-                if (file.size > 2 * 1024 * 1024) {
-                    alert('File too large. Maximum size is 2MB.');
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File too large. Maximum size is 5MB.');
                     return;
                 }
+                
+                // Show preview immediately
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     showLogoPreview(e.target.result);
                 };
                 reader.readAsDataURL(file);
+                
+                // Upload to Cloudinary
+                try {
+                    const formData = new FormData();
+                    formData.append('logo', file);
+                    
+                    // Show uploading state
+                    const uploadStatus = document.createElement('div');
+                    uploadStatus.id = 'upload-status';
+                    uploadStatus.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #6366f1; color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; font-weight: 600;';
+                    uploadStatus.textContent = '📤 Uploading logo...';
+                    document.body.appendChild(uploadStatus);
+                    
+                    const response = await fetch('/api/merchant/upload-logo', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Update preview with Cloudinary URL
+                        showLogoPreview(data.logoUrl);
+                        uploadStatus.style.background = '#10b981';
+                        uploadStatus.textContent = '✅ Logo uploaded successfully!';
+                        
+                        // Apply branding immediately
+                        const settings = await loadSettings();
+                        applyBranding(settings);
+                    } else {
+                        uploadStatus.style.background = '#ef4444';
+                        uploadStatus.textContent = '❌ Upload failed: ' + data.error;
+                    }
+                    
+                    // Remove status after 3 seconds
+                    setTimeout(() => uploadStatus.remove(), 3000);
+                    
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Failed to upload logo: ' + error.message);
+                }
             }
         });
         
