@@ -1114,21 +1114,60 @@ app.post('/api/merchant/receipt/:transactionId/send', requireAuth, async (req, r
     // Generate receipt HTML (email-safe, no buttons)
     const receiptHtml = generateReceiptHtml(transaction, merchantSettings, true);
     
+    // Generate plain text version for email clients that don't support HTML
+    const currencySymbols = {
+      USD: '$', EUR: '€', GBP: '£', NGN: '₦', INR: '₹', 
+      JPY: '¥', CAD: 'C$', AUD: 'A$', BRL: 'R$', ZAR: 'R'
+    };
+    const symbol = currencySymbols[transaction.currency] || transaction.currency + ' ';
+    const receiptText = `
+PAYMENT RECEIPT
+${'='.repeat(50)}
+
+${merchantSettings.businessName || 'EZ TRANZ'}
+${merchantSettings.address || ''}
+${merchantSettings.phone || ''}
+
+Transaction ID: ${transaction.id}
+Date: ${new Date(transaction.createdAt).toLocaleString()}
+Amount: ${symbol}${transaction.amount.toFixed(2)}
+${transaction.customerPhone ? `Customer: ${transaction.customerPhone}` : ''}
+${transaction.last4 ? `Payment Method: ${transaction.cardBrand || 'Card'} **** ${transaction.last4}` : ''}
+
+${merchantSettings.receiptFooter || 'Thank you for your business!'}
+
+View full receipt: https://ez-tranz.onrender.com/receipt/${transaction.id}
+${'='.repeat(50)}
+    `.trim();
+    
     // Send email via Resend
-    const fromEmail = process.env.RECEIPT_FROM_EMAIL || 'receipts@eztranz.com';
+    const fromEmail = process.env.RECEIPT_FROM_EMAIL || 'onboarding@resend.dev';
+    
+    console.log('📧 Sending email with Resend...');
+    console.log('   From:', fromEmail);
+    console.log('   To:', email);
+    console.log('   Subject:', `Payment Receipt from ${merchantSettings.businessName || 'EZ TRANZ'}`);
+    console.log('   HTML size:', receiptHtml.length, 'bytes');
+    console.log('   Text size:', receiptText.length, 'bytes');
+    
     const result = await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: `Payment Receipt from ${merchantSettings.businessName || 'EZ TRANZ'}`,
-      html: receiptHtml
+      html: receiptHtml,
+      text: receiptText
     });
     
-    console.log(`✅ Receipt sent successfully to ${email} - Email ID: ${result.id}`);
+    console.log(`✅ Resend API accepted email - ID: ${result.id}`);
+    console.log(`   ⚠️  Email ID doesn't guarantee delivery - check Resend dashboard`);
+    console.log(`   📊 Resend logs: https://resend.com/emails/${result.id}`);
+    console.log(`   🔍 If not received: Check spam folder, verify recipient email`);
     
     res.json({ 
       success: true, 
       message: `Receipt sent to ${email}`,
-      emailId: result.id
+      emailId: result.id,
+      note: 'Email sent to Resend. Check spam folder if not received in 2-3 minutes.'
     });
   } catch (error) {
     console.error('❌ Error sending receipt:', error);
