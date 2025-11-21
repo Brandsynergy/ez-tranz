@@ -1221,13 +1221,13 @@ function generateGmailCompatibleReceiptHtml(transaction, merchantSettings, symbo
                       Location based on IP address
                     </p>
                     ${org ? `
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 12px;">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 16px auto 0 auto; max-width: 90%;">
                         <tr>
-                          <td style="padding: 10px; background: white; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
-                            <p style="font-size: 11px; color: #9ca3af; margin: 0 0 4px 0; font-family: Arial, sans-serif;">
+                          <td style="padding: 12px 20px; background: white; border-radius: 8px; border: 1px solid #e5e7eb; text-align: center;">
+                            <p style="font-size: 11px; color: #9ca3af; margin: 0 0 6px 0; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 0.5px;">
                               Network Provider
                             </p>
-                            <p style="font-size: 13px; font-weight: 600; color: #374151; margin: 0; font-family: Arial, sans-serif;">
+                            <p style="font-size: 14px; font-weight: 600; color: #374151; margin: 0; font-family: Arial, sans-serif;">
                               ${org}
                             </p>
                           </td>
@@ -1275,16 +1275,7 @@ function generateGmailCompatibleReceiptHtml(transaction, merchantSettings, symbo
     }
   }
   
-  // Gmail image reminder banner
-  const gmailBanner = merchantSettings?.logoUrl ? `
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-bottom: 16px;">
-      <tr>
-        <td style="padding: 12px; background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; text-align: center;">
-          <p style="font-size: 13px; color: #92400e; margin: 0; font-weight: 600; font-family: Arial, sans-serif;">📧 Using Gmail? Click "Display images below" to see the logo</p>
-        </td>
-      </tr>
-    </table>
-  ` : '';
+  // No Gmail banner needed - emails now arrive from verified domain
   
   return `
     <!DOCTYPE html>
@@ -1302,8 +1293,6 @@ function generateGmailCompatibleReceiptHtml(transaction, merchantSettings, symbo
             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="margin: 0 auto; background: white; border-radius: 16px; max-width: 600px;">
               <tr>
                 <td style="padding: 40px;">
-                  
-                  ${gmailBanner}
                   
                   <!-- Logo -->
                   ${merchantSettings?.logoUrl ? `
@@ -1409,13 +1398,13 @@ function generateGmailCompatibleReceiptHtml(transaction, merchantSettings, symbo
                   </table>
                   
                   <!-- Amount Paid (Highlighted) -->
-                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 16px; background: ${merchantSettings.primaryColor || '#6366f1'}; border-radius: 12px;">
+                  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 24px; background: ${merchantSettings.primaryColor || '#6366f1'}; border-radius: 12px;">
                     <tr>
-                      <td style="padding: 16px;">
+                      <td style="padding: 20px;">
                         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                           <tr>
-                            <td style="font-size: 18px; font-weight: 700; color: #ffffff; font-family: Arial, sans-serif;">Amount Paid</td>
-                            <td style="font-size: 18px; font-weight: 700; color: #ffffff; text-align: right; font-family: Arial, sans-serif;">${symbol}${transaction.amount.toFixed(2)}</td>
+                            <td style="font-size: 20px; font-weight: 700; color: #ffffff; font-family: Arial, sans-serif;">Amount Paid</td>
+                            <td style="font-size: 20px; font-weight: 700; color: #ffffff; text-align: right; font-family: Arial, sans-serif;">${symbol}${transaction.amount.toFixed(2)}</td>
                           </tr>
                         </table>
                       </td>
