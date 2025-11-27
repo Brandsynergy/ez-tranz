@@ -815,10 +815,6 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
     // This is the correct Stripe Connect pattern for Direct Charges
     const stripeCustomer = await stripe.customers.create({
       phone,
-      payment_method: paymentMethodId,
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
     });
     
     console.log(`✅ Customer created on platform: ${stripeCustomer.id}`);
@@ -828,7 +824,14 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       customer: stripeCustomer.id,
     });
     
-    console.log(`✅ Payment method attached: ${paymentMethodId}`);
+    // Set as default payment method
+    await stripe.customers.update(stripeCustomer.id, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+    
+    console.log(`✅ Payment method attached and set as default: ${paymentMethodId}`);
     
     // Create payment intent using Direct Charges pattern
     // Customer and PM on platform, but payment goes to connected account
