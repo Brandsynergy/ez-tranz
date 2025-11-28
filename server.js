@@ -840,6 +840,7 @@ app.post('/api/customer/save-and-pay', async (req, res) => {
       currency: currency || 'usd',
       customer: stripeCustomer.id,
       payment_method: paymentMethodId,
+      payment_method_types: ['card'], // Only accept cards, no redirect methods
       confirm: true,
       setup_future_usage: 'off_session',
     };
@@ -955,6 +956,7 @@ app.post('/api/customer/pay-with-saved', async (req, res) => {
       currency: currency || 'usd',
       customer: customer.stripeCustomerId,
       payment_method: paymentMethodId,
+      payment_method_types: ['card'], // Only accept cards, no redirect methods
       off_session: true,
       confirm: true
     };
