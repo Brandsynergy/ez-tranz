@@ -67,8 +67,8 @@ This is proprietary software developed by MIVADO LIMITED. Trial access does not 
 
 **For licensing inquiries, contact:**
 MIVADO LIMITED  
-Email: [your-contact-email]  
-Website: [your-website]
+Email: support@mivado.co  
+Website: https://mivado.carrd.co
 
 ---
 

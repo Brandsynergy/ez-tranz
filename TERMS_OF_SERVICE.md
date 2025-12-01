@@ -188,14 +188,14 @@ If any provision of these Terms is found to be invalid or unenforceable, the rem
 **For questions about these Terms:**
 
 MIVADO LIMITED  
-Email: [your-contact-email]  
-Website: [your-website]
+Email: support@mivado.co  
+Website: https://mivado.carrd.co
 
 **For legal notices:**
 
 MIVADO LIMITED  
 Legal Department  
-[Your business address]
+Manchester, United Kingdom
 
 ---
 
