@@ -8,6 +8,57 @@
  * Violators will be prosecuted to the fullest extent of the law.
  */
 
+// Check Terms of Service consent on page load
+window.addEventListener('DOMContentLoaded', () => {
+    const tosAccepted = localStorage.getItem('tos_accepted');
+    const tosModal = document.getElementById('tos-modal');
+    const appContainer = document.getElementById('app-container');
+    const tosCheckbox = document.getElementById('tos-checkbox');
+    const tosAcceptBtn = document.getElementById('tos-accept');
+    const tosDeclineBtn = document.getElementById('tos-decline');
+    
+    // Show modal if terms not accepted
+    if (!tosAccepted) {
+        tosModal.style.display = 'block';
+    } else {
+        // Enable app if already accepted
+        appContainer.style.filter = 'none';
+        appContainer.style.pointerEvents = 'auto';
+    }
+    
+    // Enable accept button when checkbox is checked
+    tosCheckbox.addEventListener('change', () => {
+        if (tosCheckbox.checked) {
+            tosAcceptBtn.disabled = false;
+            tosAcceptBtn.style.opacity = '1';
+            tosAcceptBtn.style.cursor = 'pointer';
+        } else {
+            tosAcceptBtn.disabled = true;
+            tosAcceptBtn.style.opacity = '0.5';
+            tosAcceptBtn.style.cursor = 'not-allowed';
+        }
+    });
+    
+    // Handle accept button
+    tosAcceptBtn.addEventListener('click', () => {
+        if (tosCheckbox.checked) {
+            localStorage.setItem('tos_accepted', 'true');
+            localStorage.setItem('tos_accepted_date', new Date().toISOString());
+            tosModal.style.display = 'none';
+            appContainer.style.filter = 'none';
+            appContainer.style.pointerEvents = 'auto';
+            console.log('✅ Terms of Service accepted');
+        }
+    });
+    
+    // Handle decline button
+    tosDeclineBtn.addEventListener('click', () => {
+        alert('You must accept the Terms of Service to use EZ TRANZ.\n\nThis software is proprietary to MIVADO LIMITED and cannot be used without agreement to the terms.');
+        // Optionally redirect away
+        window.location.href = 'about:blank';
+    });
+});
+
 let currentAmount = '';
 let currentSessionId = null;
 let statusCheckInterval = null;
