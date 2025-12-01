@@ -1,3 +1,13 @@
+/**
+ * EZ TRANZ - Mobile Payment Terminal
+ * Copyright © 2025 MIVADO LIMITED. All Rights Reserved.
+ * 
+ * PROPRIETARY SOFTWARE - UNAUTHORIZED USE PROHIBITED
+ * This software is the exclusive property of MIVADO LIMITED.
+ * Copying, modification, reverse engineering, or distribution is strictly prohibited.
+ * Violators will be prosecuted to the fullest extent of the law.
+ */
+
 let currentAmount = '';
 let currentSessionId = null;
 let statusCheckInterval = null;

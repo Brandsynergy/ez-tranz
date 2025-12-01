@@ -1,0 +1,74 @@
+PROPRIETARY SOFTWARE LICENSE AGREEMENT
+
+EZ TRANZ - Mobile Payment Terminal
+Copyright © 2025 MIVADO LIMITED. All Rights Reserved.
+
+================================================================================
+
+NOTICE: THIS IS PROPRIETARY SOFTWARE OWNED BY MIVADO LIMITED.
+
+This software and associated documentation files (the "Software") are the 
+exclusive property of MIVADO LIMITED and are protected by copyright law and 
+international treaties.
+
+UNAUTHORIZED COPYING, MODIFICATION, DISTRIBUTION, OR USE OF THIS SOFTWARE 
+IS STRICTLY PROHIBITED AND WILL BE PROSECUTED TO THE FULLEST EXTENT OF THE LAW.
+
+================================================================================
+
+LIMITED TRIAL LICENSE
+
+MIVADO LIMITED grants you a limited, non-exclusive, non-transferable, 
+revocable license to use the Software solely for evaluation and testing 
+purposes during the authorized trial period.
+
+RESTRICTIONS:
+
+1. You may NOT copy, reproduce, or duplicate the Software
+2. You may NOT modify, adapt, or create derivative works
+3. You may NOT reverse engineer, decompile, or disassemble the Software
+4. You may NOT distribute, sell, rent, lease, or sublicense the Software
+5. You may NOT use the Software for commercial purposes
+6. You may NOT remove or alter any copyright notices
+7. You may NOT extract or copy any code, designs, or functionality
+
+OWNERSHIP:
+
+MIVADO LIMITED retains all rights, title, and interest in and to the Software,
+including all intellectual property rights. No ownership rights are transferred
+to you under this license.
+
+TERMINATION:
+
+This license is effective until terminated. Your rights under this license will
+terminate automatically without notice if you fail to comply with any term of
+this license. Upon termination, you must cease all use of the Software.
+
+NO WARRANTY:
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+LIMITATION OF LIABILITY:
+
+IN NO EVENT SHALL MIVADO LIMITED BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+GOVERNING LAW:
+
+This license shall be governed by and construed in accordance with the laws
+applicable to MIVADO LIMITED's jurisdiction.
+
+================================================================================
+
+For licensing inquiries or permissions:
+Contact: MIVADO LIMITED
+Email: [your-contact-email]
+
+© 2025 MIVADO LIMITED
+All Rights Reserved Worldwide
+
+================================================================================
