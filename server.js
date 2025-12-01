@@ -1810,6 +1810,22 @@ app.get('/api/merchant/diagnostics', requireAuth, (req, res) => {
   });
 });
 
+// Serve legal documents from root directory
+const path = require('path');
+const fs = require('fs');
+
+app.get('/COPYRIGHT.md', (req, res) => {
+  res.sendFile(path.join(__dirname, 'COPYRIGHT.md'));
+});
+
+app.get('/LICENSE.txt', (req, res) => {
+  res.sendFile(path.join(__dirname, 'LICENSE.txt'));
+});
+
+app.get('/TERMS_OF_SERVICE.md', (req, res) => {
+  res.sendFile(path.join(__dirname, 'TERMS_OF_SERVICE.md'));
+});
+
 // Serve static files AFTER API routes
 app.use(express.static('public'));
 
